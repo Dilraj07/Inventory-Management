@@ -1,0 +1,3 @@
+fastapi
+uvicorn
+# existing libs are standard (sqlite3, collections, heapq) but good to be explicit if we expanded
