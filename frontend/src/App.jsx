@@ -212,7 +212,7 @@ function App() {
     <div className="flex bg-[#F1F5F9] min-h-screen font-sans">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="ml-64 flex-1 p-8 overflow-y-auto">
+      <main className="ml-72 flex-1 p-8 overflow-y-auto">
         <header className="flex justify-between items-center mb-8">
           {/* Dynamic Header based on active tab could go here, but kept simple for now */}
         </header>
