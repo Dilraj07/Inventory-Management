@@ -42,9 +42,14 @@ class InventoryBST:
         
         if node:
             self.in_order_traversal(node.left, result)
+            # Check if product_name is dict (from API patch) or str
+            name_val = node.product_name['name'] if isinstance(node.product_name, dict) else node.product_name
+            stock_val = node.product_name['stock'] if isinstance(node.product_name, dict) else 0
+
             result.append({
                 "sku": node.sku,
-                "name": node.product_name,
+                "name": name_val,
+                "stock_hint": stock_val, # Added this field
                 "days_remaining": node.days_remaining
             })
             self.in_order_traversal(node.right, result)

@@ -39,13 +39,47 @@ def setup_database():
     ''')
 
     # Seed initial product data
-    sample_products = [
-        ('SKU001', 'Organic Milk', 150, 2, 3.50),
-        ('SKU002', 'Smartphone Case', 45, 5, 12.00),
-        ('SKU003', 'Pain Reliever', 300, 7, 8.50)
-    ]
+    # Seed Synthetic Data (30 Products)
+    import random
+    from datetime import datetime, timedelta
+
+    categories = {
+        'Electronics': ['Mouse', 'Keyboard', 'Monitor', 'Cable', 'Charger', 'Headset', 'Webcam', 'Microphone', 'Laptop Stand', 'USB Hub'],
+        'Office': ['Paper', 'Pen', 'Stapler', 'Binder', 'Folder', 'Notepad', 'Desk Lamp', 'Chair', 'Whiteboard', 'Marker'],
+        'Kitchen': ['Mug', 'Plate', 'Fork', 'Spoon', 'Knife', 'Bowl', 'Glass', 'Napkin', 'Towel', 'Soap']
+    }
     
-    cursor.executemany('INSERT OR IGNORE INTO products VALUES (?,?,?,?,?)', sample_products)
+    products_data = []
+    sales_data = []
+    
+    sku_counter = 1
+    for cat, items in categories.items():
+        for item in items:
+            sku = f"SKU{sku_counter:03d}"
+            name = f"{item} ({cat})"
+            
+            # Randomize stats to create "Critical", "Stable", and "Overstocked" scenarios
+            stock = random.randint(5, 200) 
+            lead = random.randint(2, 14)
+            cost = round(random.uniform(5.0, 150.0), 2)
+            
+            products_data.append((sku, name, stock, lead, cost))
+            
+            # Generate sales history (last 30 days)
+            # Create patterns: High demand vs Low demand
+            daily_demand = random.randint(0, 5) if stock > 50 else random.randint(1, 10) # Inverse logic to force some criticals
+            
+            start_date = datetime.now()
+            for i in range(10): # Last 10 days output
+                date_str = (start_date - timedelta(days=i)).strftime('%Y-%m-%d')
+                qty = max(0, daily_demand + random.randint(-2, 2)) # Variance
+                if qty > 0:
+                    sales_data.append((sku, qty, date_str))
+            
+            sku_counter += 1
+
+    cursor.executemany('INSERT OR IGNORE INTO products VALUES (?,?,?,?,?)', products_data)
+    cursor.executemany('INSERT INTO sales_history (sku, qty_sold, sale_date) VALUES (?,?,?)', sales_data)
 
     # Seed initial sales data (to test prediction)
     # SKU001 (Milk): High sales (10/day), huge stock (150). Days left = 15.

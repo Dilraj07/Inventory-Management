@@ -88,7 +88,14 @@ def get_inventory_report():
     
     for sku in products:
         score = calculate_priority_score(sku)
-        bst.insert(score, sku, products[sku]['name'])
+        # Hacky: storing stock in name or modifying BST node to hold extra data
+        # Let's cleanly modify BST insert if possible, or just pass a dict as 'product_name'
+        # Actually, let's update BSTNode in reporting.py OR just return a richer object here.
+        
+        # NOTE: To avoid breaking reporting.py right now, I will modify what we pass as 'product_name' 
+        # OR I can just build a list since we are re-calculating sort anyway? 
+        # Ideally reporting.py logic handles the BST. Let's patch reporting.py to accept stock.
+        bst.insert(score, sku, {'name': products[sku]['name'], 'stock': products[sku]['stock']})
         
     report = bst.in_order_traversal(bst.root)
     return report
@@ -120,3 +127,64 @@ def enqueue_order(order: Order):
 @app.get("/api/shipping/queue")
 def view_queue():
     return shipping_queue.view_queue()
+
+# --- Inventory Management (CRUD) ---
+
+class ProductCreate(BaseModel):
+    sku: str
+    name: str
+    current_stock: int
+    lead_time_days: int
+    unit_cost: float
+
+@app.post("/api/products")
+def create_product(prod: ProductCreate):
+    import sqlite3
+    try:
+        conn = sqlite3.connect('pirs_warehouse.db')
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO products (sku, name, current_stock, lead_time_days, unit_cost) VALUES (?, ?, ?, ?, ?)",
+            (prod.sku, prod.name, prod.current_stock, prod.lead_time_days, prod.unit_cost)
+        )
+        conn.commit()
+        conn.close()
+        return {"message": f"Product {prod.sku} created successfully."}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="SKU already exists.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/products/{sku}/stock")
+def update_stock(sku: str, update: StockUpdate):
+    import sqlite3
+    try:
+        conn = sqlite3.connect('pirs_warehouse.db')
+        cursor = conn.cursor()
+        cursor.execute("UPDATE products SET current_stock = ? WHERE sku = ?", (update.new_stock, sku))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Product not found.")
+        conn.commit()
+        conn.close()
+        return {"message": f"Stock for {sku} updated to {update.new_stock}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/products/{sku}")
+def delete_product(sku: str):
+    import sqlite3
+    try:
+        conn = sqlite3.connect('pirs_warehouse.db')
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM products WHERE sku = ?", (sku,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Product not found.")
+        conn.commit()
+        conn.close()
+        return {"message": f"Product {sku} deleted."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
