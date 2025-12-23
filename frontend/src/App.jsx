@@ -186,7 +186,22 @@ function App() {
                 </p>
               </div>
             </div>
+            <div className="flex justify-between items-center mt-8 mb-4">
+              <h3 className="text-xl font-bold text-slate-900">Quick Inventory Management</h3>
+              <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
+                <Plus size={16} /> Add Product
+              </button>
+            </div>
+
+            {/* Quick Inventory Table */}
+            <Card title="Recent Inventory Items">
+              <div className="max-h-96 overflow-y-auto">
+                <InventoryTable data={inventory} onUpdate={fetchData} />
+              </div>
+            </Card>
+
           </div>
+
         );
     }
   };
