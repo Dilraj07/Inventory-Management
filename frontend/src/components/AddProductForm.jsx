@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function AddProductForm({ onSuccess, onCancel }) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     sku: '',
     name: '',
@@ -23,7 +25,7 @@ export function AddProductForm({ onSuccess, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-slate-700">SKU</label>
+        <label className="block text-sm font-medium text-slate-700">{t('sku')}</label>
         <input
           required
           className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm border p-2"
@@ -34,7 +36,7 @@ export function AddProductForm({ onSuccess, onCancel }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Product Name</label>
+        <label className="block text-sm font-medium text-slate-700">{t('productName')}</label>
         <input
           required
           className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm border p-2"
@@ -46,7 +48,7 @@ export function AddProductForm({ onSuccess, onCancel }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700">Initial Stock</label>
+          <label className="block text-sm font-medium text-slate-700">{t('initialStock')}</label>
           <input
             type="number"
             required
@@ -56,7 +58,7 @@ export function AddProductForm({ onSuccess, onCancel }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700">Lead Time (Days)</label>
+          <label className="block text-sm font-medium text-slate-700">{t('leadTimeDays')}</label>
           <input
             type="number"
             required
@@ -68,7 +70,7 @@ export function AddProductForm({ onSuccess, onCancel }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Unit Cost (₹)</label>
+        <label className="block text-sm font-medium text-slate-700">{t('unitCost')}</label>
         <input
           type="number"
           step="0.01"
@@ -81,10 +83,10 @@ export function AddProductForm({ onSuccess, onCancel }) {
 
       <div className="flex justify-end gap-3 pt-4">
         <button type="button" onClick={onCancel} className="bg-white text-slate-700 px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-sm font-medium">
-          Cancel
+          {t('cancel')}
         </button>
         <button type="submit" className="bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-700 text-sm font-medium">
-          Create Product
+          {t('createProduct')}
         </button>
       </div>
     </form>

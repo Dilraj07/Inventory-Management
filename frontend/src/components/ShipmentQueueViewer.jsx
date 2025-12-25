@@ -3,8 +3,10 @@ import { Truck, Package, Clock, ArrowRight, MapPin } from 'lucide-react';
 import { Card } from './Card';
 import axios from 'axios';
 import { TrolleyAnimation } from './TrolleyAnimation';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function ShipmentQueueViewer() {
+  const { t } = useLanguage();
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,12 +30,12 @@ export function ShipmentQueueViewer() {
     <div className="space-y-6">
       <div className="flex justify-between items-end border-b border-slate-200/60 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Outbound Logistics</h2>
-          <p className="text-slate-500 text-sm mt-1">Real-time FIFO Processing Queue</p>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">{t('outboundLogistics')}</h2>
+          <p className="text-slate-500 text-sm mt-1">{t('fifoQueueProcessing')}</p>
         </div>
         <div className="flex items-center gap-2 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100">
           <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></div>
-          <span className="text-xs font-bold text-sky-700 uppercase tracking-wider">Live Stream</span>
+          <span className="text-xs font-bold text-sky-700 uppercase tracking-wider">{t('liveStream')}</span>
         </div>
       </div>
 
@@ -42,8 +44,8 @@ export function ShipmentQueueViewer() {
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 shadow-sm">
             <Package size={28} />
           </div>
-          <h3 className="text-slate-900 font-semibold mb-1">Logistics Queue Idle</h3>
-          <p className="text-slate-500 text-sm max-w-xs mx-auto">Systems operational. Waiting for new order creation signals.</p>
+          <h3 className="text-slate-900 font-semibold mb-1">{t('logisticsQueueIdle')}</h3>
+          <p className="text-slate-500 text-sm max-w-xs mx-auto">{t('systemsOperational')}</p>
         </div>
       ) : (
         <>
@@ -59,7 +61,7 @@ export function ShipmentQueueViewer() {
 
               <div className="bg-white rounded-xl border border-sky-100 shadow-[0_4px_20px_-10px_rgba(14,165,233,0.15)] p-5 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 bg-sky-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-sm z-10">
-                  PROCESSING
+                  {t('processing')}
                 </div>
                 {/* Background decoration */}
                 <div className="absolute right-0 bottom-0 opacity-5 transform translate-x-4 translate-y-4">
@@ -80,7 +82,7 @@ export function ShipmentQueueViewer() {
                     </div>
                     <div className="flex items-center gap-2 mt-3 text-xs text-sky-600 font-medium">
                       <MapPin size={12} />
-                      <span>Dispatching from Zone A</span>
+                      <span>{t('dispatchingFromZoneA')}</span>
                     </div>
                   </div>
                 </div>
@@ -102,7 +104,7 @@ export function ShipmentQueueViewer() {
                   </div>
                   <div className="ml-auto text-xs text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded">
                     <Clock size={12} />
-                    Waiting
+                    {t('waiting')}
                   </div>
                 </div>
               </div>

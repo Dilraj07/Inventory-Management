@@ -1,14 +1,26 @@
-# PIRS: Predictive Inventory & Reorder System
+# Saaman: Predictive Inventory & Reorder System
 
 ## 🚀 Project Overview
 
-**PIRS (Predictive Inventory & Reorder System)** is a full-stack warehouse management solution designed to demonstrate the practical application of **Data Structures & Algorithms (DSA)** in real-world scenarios.
+**Saaman** (formerly PIRS) is a full-stack warehouse management solution designed to demonstrate the practical application of **Data Structures & Algorithms (DSA)** in real-world scenarios.
 
-Unlike traditional inventory dashboards, PIRS relies on specific data structures to optimized key warehouse operations:
+Unlike traditional inventory dashboards, Saaman relies on specific data structures to optimize key warehouse operations:
 *   **Min-Heaps** for emergency restock prioritization.
 *   **Binary Search Trees (BST)** for stability analysis.
 *   **Queues** for shipment processing.
 *   **Hash Tables** for instant SKU lookup.
+
+## 🛠️ Key Features
+
+### 🌐 Multi-language Support
+Saaman is built for a diverse workforce, featuring full localization support for:
+*   **English**
+*   **Hindi (हिंदी)**
+*   **Kannada (ಕನ್ನಡ)**
+
+### 🛒 Visual Logistics
+*   **Animated Trolley**: Real-time visualization of the FIFO packing queue, moving orders through Warehouse → Packing → Dispatch zones.
+*   **Currency Localization**: All financial metrics are adapted for the Indian market (₹ INR).
 
 ## 🛠️ Tech Stack
 
@@ -26,7 +38,7 @@ Unlike traditional inventory dashboards, PIRS relies on specific data structures
 
 ## 🧠 Data Structures & Algorithms
 
-Everything in PIRS is built showing *why* a specific data structure is chosen for a task.
+Everything in Saaman is built showing *why* a specific data structure is chosen for a task.
 
 | Feature | Data Structure | Why? |
 | :--- | :--- | :--- |
@@ -58,7 +70,7 @@ Everything in PIRS is built showing *why* a specific data structure is chosen fo
 ## 📂 Project Structure
 
 ```bash
-PIRS/
+Saaman/
 ├── api.py                 # FastAPI backend entry point
 ├── database_setup.py      # Seeds SQLite DB with mock data
 ├── data_ingestion.py      # Handles DB extraction & Hash Table creation
@@ -108,8 +120,9 @@ PIRS/
 4.  **Access the Dashboard**
     *   Open `http://localhost:5173` in your browser.
 
-## 📸 visualizaton
+## 📸 Visualization
 
 *   **Dashboard**: Shows real-time priority alerts using Heap logic.
 *   **Inventory**: Customizable table for stock management.
 *   **Reports**: Visualizes the audit rotation cycle.
+

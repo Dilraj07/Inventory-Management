@@ -1,25 +1,36 @@
 import React from 'react';
 import { LayoutDashboard, Package, ShoppingCart, BarChart3, Settings, LogOut, HelpCircle, Truck } from 'lucide-react';
+import { LanguageSelector } from './LanguageSelector';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function Sidebar({ activeTab, onTabChange }) {
+  const { t } = useLanguage();
+
   const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'inventory', icon: Package, label: 'Inventory' },
-    { id: 'shipments', icon: Truck, label: 'Orders' }, // Mapped to Orders
-    { id: 'reports', icon: BarChart3, label: 'Reporting' },
+    { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
+    { id: 'inventory', icon: Package, label: t('inventory') },
+    { id: 'shipments', icon: Truck, label: t('shipments') },
+    { id: 'reports', icon: BarChart3, label: t('reporting') },
   ];
 
   return (
     <div className="fixed left-4 top-4 bottom-4 w-64 bg-[#f8fafc] rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] z-50 overflow-hidden border border-slate-100 flex flex-col">
 
       {/* Header / Logo Area */}
-      <div className="h-24 flex items-center shrink-0 pl-8">
-        <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-lg">
-          <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></div>
+      <div className="h-24 flex items-center shrink-0 pl-6">
+        <div className="w-16 h-16 flex items-center justify-center shrink-0">
+          <img
+            src="/logo.png"
+            alt="Saaman Logo"
+            className="w-full h-full object-contain mix-blend-multiply opacity-90"
+          />
         </div>
-        <span className="ml-4 font-bold text-xl text-slate-800 tracking-tight">
-          PIRS Core
-        </span>
+        <div className="ml-1">
+          <h1 className="font-bold text-2xl text-slate-900 tracking-tight leading-none">
+            {t('appName')}
+          </h1>
+          <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">Predictive System</p>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -31,8 +42,8 @@ export function Sidebar({ activeTab, onTabChange }) {
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={`w-full flex items-center h-14 rounded-[24px] transition-all relative group overflow-hidden ${isActive
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-100/50'
-                  : 'text-slate-500 hover:bg-white/50 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-sm border border-slate-100/50'
+                : 'text-slate-500 hover:bg-white/50 hover:text-slate-900'
                 }`}
             >
               <div className="w-14 h-14 flex items-center justify-center shrink-0">
@@ -53,13 +64,17 @@ export function Sidebar({ activeTab, onTabChange }) {
       </nav>
 
       {/* Footer */}
-      <div className="p-5 shrink-0 mb-2">
+      <div className="p-5 shrink-0 space-y-3 mb-2">
+        {/* Language Selector */}
+        <LanguageSelector />
+
+        {/* Logout Button */}
         <button className="w-full flex items-center h-14 rounded-[24px] text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
           <div className="w-14 h-14 flex items-center justify-center shrink-0">
             <LogOut size={22} />
           </div>
           <span className="text-sm font-bold">
-            Logout
+            {t('logout')}
           </span>
         </button>
       </div>
