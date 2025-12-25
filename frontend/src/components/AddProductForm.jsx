@@ -68,7 +68,7 @@ export function AddProductForm({ onSuccess, onCancel }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Unit Cost ($)</label>
+        <label className="block text-sm font-medium text-slate-700">Unit Cost (₹)</label>
         <input
           type="number"
           step="0.01"

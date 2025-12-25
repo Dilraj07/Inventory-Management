@@ -39,7 +39,7 @@ def seed_data(cursor):
         name = f"Component {chr(65 + (i%26))}{i}"
         # Random stock between 20 and 500
         stock = random.randint(20, 500)
-        price = round(random.uniform(5.0, 150.0), 2)
+        price = round(random.uniform(400.0, 12000.0), 2)
         supplier = f"Supplier X{i%5}"
         product_list.append((sku, name, stock, price, supplier))
     

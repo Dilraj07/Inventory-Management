@@ -61,7 +61,7 @@ def setup_database():
             # Randomize stats to create "Critical", "Stable", and "Overstocked" scenarios
             stock = random.randint(5, 200) 
             lead = random.randint(2, 14)
-            cost = round(random.uniform(5.0, 150.0), 2)
+            cost = round(random.uniform(400.0, 12000.0), 2)
             
             products_data.append((sku, name, stock, lead, cost))
             
