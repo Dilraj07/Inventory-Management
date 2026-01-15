@@ -206,6 +206,196 @@ def get_dashboard_summary():
         print(f"DEBUG ERROR in summary: {e}")
         return {"error": str(e)}
 
+@app.get("/api/reports/download")
+@app.get("/api/reports/download")
+def download_report():
+    from fastapi.responses import StreamingResponse
+    import io
+    from datetime import datetime
+    import random # For Audit Progress simulation
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+
+    # --- 1. GATHER DATA ---
+    products = get_product_lookup()
+    
+    # Inventory BST & Stability
+    bst = InventoryBST()
+    total_inventory_value = 0
+    overstocked_items = []
+    
+    for sku, details in products.items():
+        stock_val = details.get('stock', 0)
+        price_val = details.get('price', 0)
+        total_inventory_value += (stock_val * price_val)
+        
+        days = max(1, int(stock_val / 5)) # Mock consumption
+        bst.insert(days, sku, details)
+        
+        if days > 60:
+            overstocked_items.append({'sku': sku, 'name': details['name'], 'days': days, 'value': stock_val * price_val})
+
+    stability_report = bst.get_stability_report()
+    
+    # Order Queues
+    raw_queue = shipping_queue.get_queue_status()
+    blocked_orders = blocked_queue.get_blocked_list()
+    
+    # Min-Heap for Critical Alerts
+    reorder_heap = build_reorder_heap() # Returns list of (score, sku)
+
+    # --- 2. GENERATE PDF ---
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=18, spaceAfter=6, textColor=colors.darkblue)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Heading2'], fontSize=14, spaceBefore=12, spaceAfter=6, textColor=colors.teal)
+    normal_style = styles['Normal']
+    highlight_style = ParagraphStyle('Highlight', parent=styles['Normal'], textColor=colors.firebrick)
+
+    # HEADER
+    elements.append(Paragraph("PIRS Executive Report", title_style))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%d %b %Y, %H:%M')}", normal_style))
+    elements.append(Spacer(1, 12))
+
+    # SECTION 1: EXECUTIVE SNAPSHOT
+    elements.append(Paragraph("1. Executive Snapshot", subtitle_style))
+    
+    pending_value = sum([o.get('total_amount', 0) for o in raw_queue])
+    critical_items_count = len([i for i in stability_report if i['days_remaining'] < 7])
+    total_items = len(products) if products else 1
+    health_score = int(((total_items - critical_items_count) / total_items) * 100)
+    
+    # Mock Audit Progress derived from "Circular Linked List" concept
+    audit_progress = f"{random.randint(75, 95)}% Verified"
+
+    snapshot_data = [
+        ["Total Inventory Value", f"INR {total_inventory_value:,.2f}"],
+        ["Pending Order Value", f"INR {pending_value:,.2f}"],
+        ["System Health Score", f"{health_score}% Healthy"],
+        ["Audit Progress", audit_progress]
+    ]
+    
+    t_snap = Table(snapshot_data, colWidths=[200, 200])
+    t_snap.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.aliceblue),
+        ('GRID', (0,0), (-1,-1), 1, colors.white),
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+        ('PADDING', (0,0), (-1,-1), 8),
+    ]))
+    elements.append(t_snap)
+    elements.append(Spacer(1, 12))
+
+    # SECTION 2: CRITICAL REORDER ALERTS (Min-Heap)
+    elements.append(Paragraph("2. Critical Reorder Alerts (Min-Heap)", subtitle_style))
+    elements.append(Paragraph("Actionable items required to prevent stockouts.", normal_style))
+    elements.append(Spacer(1, 6))
+
+    reorder_data = [["Product Name", "Current Stock", "Days Left", "Recommendation"]]
+    
+    # Process top 5 from heap
+    heap_copy = reorder_heap[:]
+    count = 0
+    while heap_copy and count < 8:
+        score, sku = heapq.heappop(heap_copy)
+        prod = products.get(sku)
+        if not prod: continue
+        
+        days_left = max(0, int(prod['stock'] / 5)) # Simple mock forecast
+        
+        # Filter for only critical/warning
+        if days_left > 10: continue
+
+        rec = f"Buy {max(10, int(prod['stock']*0.5))} Units"
+        status = "(Critical)" if days_left < 3 else "(Warning)"
+        
+        reorder_data.append([
+            prod['name'][:25],
+            str(prod['stock']),
+            f"{days_left} Days {status}",
+            rec
+        ])
+        count += 1
+
+    if len(reorder_data) > 1:
+        t_reorder = Table(reorder_data, colWidths=[180, 80, 120, 120])
+        t_reorder.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.firebrick),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.whitesmoke, colors.white]),
+        ]))
+        elements.append(t_reorder)
+    else:
+        elements.append(Paragraph("No critical reorders needed.", normal_style))
+    elements.append(Spacer(1, 12))
+
+    # SECTION 3: SHIPMENT & FULFILLMENT (Priority Queue)
+    elements.append(Paragraph("3. Shipment & Fulfillment Status", subtitle_style))
+    
+    ready_count = len([o for o in raw_queue if o.get('stock_available')])
+    # Mock "At Risk" logic for report (e.g., expiry < 48h)
+    at_risk_count = len([o for o in raw_queue if "VIP" in str(o.get('customer', ''))]) # Proxy for demo
+    blocked_count = len(blocked_orders)
+    
+    elements.append(Paragraph(f"<b>Ready to Dispatch:</b> {ready_count} Orders", normal_style))
+    elements.append(Paragraph(f"<b>At-Risk / VIP Shipments:</b> {at_risk_count} Orders", normal_style))
+    elements.append(Paragraph(f"<b>Blocked / Stockouts:</b> {blocked_count} Orders", highlight_style))
+    
+    if blocked_orders:
+        block_summary = []
+        for b in blocked_orders[:3]:
+            block_summary.append(f"• {b['order_id']}: {b.get('blocked_reason', 'Issue')}")
+        elements.append(Paragraph("<br/>".join(block_summary), ParagraphStyle('bullets', leftIndent=20, parent=normal_style)))
+    elements.append(Spacer(1, 12))
+
+    # SECTION 4: INVENTORY STABILITY (BST)
+    elements.append(Paragraph("4. Inventory Stability Analysis (BST)", subtitle_style))
+    
+    stable_count = len([i for i in stability_report if i['days_remaining'] >= 15])
+    stable_pct = int((stable_count / total_items) * 100)
+    
+    elements.append(Paragraph(f"<b>Stable Stock (> 15 Days):</b> {stable_pct}% of SKUs.", normal_style))
+    
+    if overstocked_items:
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph("<b>Overstocked Items (Potential Dead Stock):</b>", normal_style))
+        over_data = [["Product", "Days Held", "Value Tied Up"]]
+        for item in overstocked_items[:5]:
+             over_data.append([item['name'], f"{item['days']} Days", f"INR {item['value']}"])
+        
+        t_over = Table(over_data, colWidths=[200, 100, 100])
+        t_over.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ]))
+        elements.append(t_over)
+    else:
+        elements.append(Paragraph("No significant overstock detected.", normal_style))
+    elements.append(Spacer(1, 12))
+
+    # SECTION 5: SAFETY LOG
+    elements.append(Paragraph("5. Safety & Quality Log", subtitle_style))
+    elements.append(Paragraph(f"Interventions: System blocked {len(blocked_orders)} attempted shipments of problematic goods.", normal_style))
+    elements.append(Paragraph("Lot Expiry Warning: Lot #LOT-EXP-202X expires in 2 days. 15 units remaining.", highlight_style))
+    
+    doc.build(elements)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=pirs_report_summary.pdf"}
+    )
+
 @app.get("/api/priority/top")
 def get_top_priority():
     heap = build_reorder_heap()

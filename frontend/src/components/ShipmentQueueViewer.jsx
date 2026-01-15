@@ -58,6 +58,8 @@ export function ShipmentQueueViewer() {
     }
   };
 
+
+
   return (
     <div className="p-6 space-y-6 h-screen flex flex-col">
       {/* Header */}
@@ -69,7 +71,12 @@ export function ShipmentQueueViewer() {
           <p className="text-slate-500 text-sm">Scenario-Based Workflow: Express vs Shortage vs Standard</p>
         </div>
         <div className="flex gap-4">
-          {/* Add aggregated stats here if needed */}
+          <button
+            onClick={handleDownloadReport}
+            className="flex items-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg font-bold text-sm transition-colors border border-indigo-200"
+          >
+            <FileText size={16} /> Download Report
+          </button>
         </div>
       </div>
 
@@ -87,7 +94,7 @@ export function ShipmentQueueViewer() {
           </div>
           <div className="p-4 space-y-3 overflow-y-auto flex-1">
             {expressLane.map(order => (
-              <div key={order.order_id} className="bg-white p-4 rounded-xl border-l-4 border-emerald-500 shadow-sm hover:shadow-md transition-all">
+              <div key={order.order_id} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
                 <div className="flex justify-between items-start mb-2">
                   <span className="font-bold text-slate-800 text-lg">{order.order_id}</span>
                   {order.tier > 1 && <span className="text-[10px] uppercase font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded">VIP</span>}
@@ -125,7 +132,7 @@ export function ShipmentQueueViewer() {
           </div>
           <div className="p-4 space-y-3 overflow-y-auto flex-1">
             {shortageAlert.map(order => (
-              <div key={order.order_id} className="bg-white p-4 rounded-xl border-l-4 border-amber-500 shadow-sm hover:shadow-md transition-all">
+              <div key={order.order_id} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all">
                 <div className="flex justify-between items-start mb-2">
                   <span className="font-bold text-slate-800">{order.order_id}</span>
                   <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100">

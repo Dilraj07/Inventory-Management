@@ -1,5 +1,6 @@
 import React from 'react';
-import { LayoutDashboard, Package, ShoppingCart, BarChart3, Settings, HelpCircle, Truck, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, BarChart3, Settings, HelpCircle, Truck, ClipboardList, FileText } from 'lucide-react';
+import axios from 'axios';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -67,6 +68,30 @@ export function Sidebar({ activeTab, onTabChange }) {
         {/* Language Selector */}
         <LanguageSelector />
 
+        <button
+          onClick={async () => {
+            try {
+              // Trigger download
+              const response = await axios.get('http://127.0.0.1:8000/api/reports/download', {
+                responseType: 'blob',
+              });
+              const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', 'pirs_report_summary.pdf');
+              document.body.appendChild(link);
+              link.click();
+              link.parentNode.removeChild(link);
+            } catch (err) {
+              console.error("Failed to download report", err);
+              alert("Failed to download PDF report. Ensure backend has 'reportlab' installed.");
+            }
+          }}
+          className="w-full flex items-center justify-center gap-2 h-12 bg-indigo-600 text-white rounded-[16px] font-bold text-sm shadow-indigo-200 shadow-lg hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all"
+        >
+          <FileText size={18} />
+          {t('downloadReport') || "Download PDF"}
+        </button>
 
       </div>
 
