@@ -13,10 +13,10 @@ def get_product_lookup():
     try:
         conn = sqlite3.connect('pirs_warehouse.db')
         cursor = conn.cursor()
-        cursor.execute("SELECT sku, name, current_stock, lead_time_days FROM products")
+        cursor.execute("SELECT sku, name, current_stock, lead_time_days, unit_cost FROM products")
         
         # SKU is the Key, Details are the Value
-        products = {row[0]: {'name': row[1], 'stock': row[2], 'lead': row[3]} for row in cursor.fetchall()}
+        products = {row[0]: {'name': row[1], 'stock': row[2], 'lead': row[3], 'price': row[4]} for row in cursor.fetchall()}
         
     except sqlite3.Error as e:
         print(f"Database error: {e}")

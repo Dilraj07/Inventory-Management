@@ -55,9 +55,7 @@ export function Sidebar({ activeTab, onTabChange }) {
               </span>
 
               {/* Active Indicator (Pill Shape) */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-slate-900 rounded-r-full"></div>
-              )}
+              {/* Active Indicator (Pill Shape) - REMOVED */}
             </button>
           );
         })}

@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { Edit2, Trash2, TrendingDown, TrendingUp, Minus, Plus } from 'lucide-react';
+import { Edit2, Trash2, TrendingDown, TrendingUp, Minus, Plus, Search } from 'lucide-react';
 import axios from 'axios';
 
 export function InventoryTable({ data, onUpdate }) {
   const [editingSku, setEditingSku] = useState(null);
   const [editVal, setEditVal] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredData = data.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleDelete = async (sku) => {
     if (!confirm('Are you confirm you want to remove item ' + sku + '?')) return;
@@ -18,7 +24,7 @@ export function InventoryTable({ data, onUpdate }) {
 
   const startEdit = (item) => {
     setEditingSku(item.sku);
-    setEditVal(item.current_stock || 0);
+    setEditVal(item.stock_hint || 0);
   };
 
   const saveEdit = async (sku) => {
@@ -33,18 +39,31 @@ export function InventoryTable({ data, onUpdate }) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200/60 shadow-sm bg-white">
+      <div className="p-4 border-b border-slate-100">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search by Product Name or SKU..."
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
       <table className="w-full text-sm text-left border-collapse">
         <thead>
           <tr className="bg-slate-50/80 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
             <th className="py-4 px-6">Product Item</th>
             <th className="py-4 px-6">SKU ID</th>
             <th className="py-4 px-6">Stock Level</th>
+            <th className="py-4 px-6">Price (₹)</th>
             <th className="py-4 px-6">Stability Score</th>
             <th className="py-4 px-6 text-right">Settings</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
-          {data.map((item, idx) => {
+          {filteredData.map((item, idx) => {
             const stockPercent = Math.min(100, (item.stock_hint / 200) * 100); // Visual sim
             return (
               <tr key={item.sku} className={`group transition-all hover:bg-sky-50/30 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
@@ -85,6 +104,10 @@ export function InventoryTable({ data, onUpdate }) {
                 </td>
 
                 <td className="py-4 px-6">
+                  <span className="font-medium text-slate-700">₹{item.price?.toLocaleString('en-IN') || '0.00'}</span>
+                </td>
+
+                <td className="py-4 px-6">
                   <div className="flex items-center gap-2">
                     <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${item.days_remaining < 7 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                       }`}>
@@ -97,7 +120,7 @@ export function InventoryTable({ data, onUpdate }) {
                 </td>
 
                 <td className="py-4 px-6 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-end gap-2">
                     <button onClick={() => startEdit(item)} className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors">
                       <Edit2 size={16} />
                     </button>

@@ -95,7 +95,7 @@ def get_inventory_report():
         # NOTE: To avoid breaking reporting.py right now, I will modify what we pass as 'product_name' 
         # OR I can just build a list since we are re-calculating sort anyway? 
         # Ideally reporting.py logic handles the BST. Let's patch reporting.py to accept stock.
-        bst.insert(score, sku, {'name': products[sku]['name'], 'stock': products[sku]['stock']})
+        bst.insert(score, sku, {'name': products[sku]['name'], 'stock': products[sku]['stock'], 'price': products[sku]['price']})
         
     report = bst.in_order_traversal(bst.root)
     return report
