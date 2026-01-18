@@ -40,7 +40,7 @@ export function ArchitectureView() {
     <div className="space-y-6">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-900">System Architecture & Data Structures</h2>
-        <p className="text-slate-500 text-sm">Visualizing the algorithmic backbone of the Predictive Inventory System.</p>
+        <p className="text-slate-500 text-sm">Visualizing the algorithmic backbone of the Inventory Management System.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

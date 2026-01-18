@@ -30,7 +30,7 @@ export function Sidebar({ activeTab, onTabChange }) {
           <h1 className="font-bold text-2xl text-slate-900 tracking-tight leading-none">
             {t('appName')}
           </h1>
-          <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">Predictive System</p>
+          <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">Inventory Management</p>
         </div>
       </div>
 

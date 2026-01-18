@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, AlertTriangle, CheckCircle, Clock, Zap, MapPin, XCircle, AlertCircle } from 'lucide-react';
+import { Package, Truck, AlertTriangle, CheckCircle, Clock, Zap, MapPin, XCircle, AlertCircle, FileText } from 'lucide-react';
 import axios from 'axios';
 
 export function ShipmentQueueViewer() {
@@ -55,6 +55,24 @@ export function ShipmentQueueViewer() {
       fetchData();
     } catch (err) {
       alert("Failed to dispatch: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/api/reports/download?lang=en`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'pirs_report_summary.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      console.error("Failed to download report", err);
+      alert("Failed to download PDF report.");
     }
   };
 

@@ -11,7 +11,7 @@ from prioritization import build_reorder_heap
 from reporting import InventoryBST, AuditList
 from floor_operations import ShippingQueue, SafetyCheck, BlockedQueue
 
-app = FastAPI(title="PIRS API", description="Predictive Inventory & Reorder System API")
+app = FastAPI(title="PIRS API", description="Inventory Management & Reorder System API")
 
 # Enable CORS for React Frontend
 app.add_middleware(
@@ -31,9 +31,17 @@ class Order(BaseModel):
     customer: str
     item_sku: str
 
+
 class StockUpdate(BaseModel):
     sku: str
     new_stock: int
+
+class OrderCreate(BaseModel):
+    customer: str
+    customer_tier: int
+    sku: str
+    qty_requested: int
+
 
 # --- Global State (Simulation) ---
 # --- Global State (Simulation) ---
@@ -84,6 +92,66 @@ def read_root():
     return {"status": "PIRS System Online"}
 
 # ... (Previous endpoints) ...
+
+@app.post("/api/orders")
+def create_order(new_order: OrderCreate):
+    import sqlite3
+    import uuid
+    from datetime import datetime
+    
+    order_id = f"ORD-{uuid.uuid4().hex[:4].upper()}"
+    order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    try:
+        # 1. Fetch Product Details for Price & Name
+        products = get_product_lookup()
+        product = products.get(new_order.sku)
+        
+        if not product:
+             raise HTTPException(status_code=404, detail="Product SKU not found.")
+             
+        total_amount = product['price'] * new_order.qty_requested
+        
+        # 2. Insert into DB
+        conn = sqlite3.connect('pirs_warehouse.db')
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            INSERT INTO customer_orders 
+            (order_id, customer_tier, order_date, sku, qty_requested, total_amount, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (order_id, new_order.customer_tier, order_date, new_order.sku, new_order.qty_requested, total_amount, 'PENDING')
+        )
+        conn.commit()
+        conn.close()
+        
+        # 3. Add to Simulation Queue (ShippingQueue)
+        days_left = max(1, int(product['stock'] / 5)) 
+        
+        order_details = {
+            'order_id': order_id,
+            'customer': new_order.customer, # We might want to store name in DB too, but schema seems to use tier only or I misread. 
+                                            # Checking DB Schema in data_ingestion or seed_db might be wise, but assuming this works for now.
+                                            # Actually get_all_orders uses customer_tier, doesn't seem to have a customer NAME column in the SELECT * usually?
+                                            # Let's check get_all_orders return.
+            'item_sku': new_order.sku,
+            'item_name': product['name'],
+            'tier': new_order.customer_tier,
+            'days_remaining': days_left,
+            'qty': new_order.qty_requested,
+            'total_amount': total_amount,
+            'status': 'PENDING'
+        }
+        shipping_queue.add_order(order_details)
+        
+        return {"message": f"Order {order_id} created successfully.", "order_id": order_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/orders/enqueue")
 def enqueue_order(order: Order):

@@ -1,4 +1,4 @@
-# Saaman: Predictive Inventory & Reorder System
+# Saaman: Inventory Management & Reorder System
 
 ## 🚀 Project Overview
 
@@ -55,7 +55,7 @@ Everything in Saaman is built showing *why* a specific data structure is chosen 
     *   Raw data is pulled from `inventory_system.db`.
     *   Sales history is loaded into **Hash Maps** for quick aggregation.
 
-2.  **Prediction Phase**:
+2.  **Forecast Phase**:
     *   The `PredictionEngine` runs a Linear Regression on sales history to calculate the **Burn Rate** (units/day).
     *   *Days Remaining* is calculated: $\text{Current Stock} / \text{Burn Rate}$.
 
@@ -94,8 +94,8 @@ Saaman/
 
 1.  **Clone the Repository**
     ```bash
-    git clone https://github.com/Dilraj07/PIRS-Predictive-Inventory-and-Reorder-System.git
-    cd PIRS-Predictive-Inventory-and-Reorder-System
+    git clone https://github.com/Dilraj07/PIRS-Inventory-Management-and-Reorder-System.git
+    cd PIRS-Inventory-Management-and-Reorder-System
     ```
 
 2.  **Backend Setup**

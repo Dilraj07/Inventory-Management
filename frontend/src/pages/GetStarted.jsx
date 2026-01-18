@@ -56,7 +56,7 @@ export default function GetStarted({ onStart }) {
         </div>
 
         <div className="font-normal text-sm md:text-base text-gray-500 py-4 text-center max-w-lg mt-4 leading-relaxed">
-          Experience the power of optimized data structures driving predictive inventory management. Our system uses advanced algorithms to streamline operations.
+          Experience the power of optimized data structures driving inventory management. Our system uses advanced algorithms to streamline operations.
         </div>
 
         <button

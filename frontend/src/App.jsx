@@ -7,6 +7,7 @@ import { ShipmentQueueViewer } from './components/ShipmentQueueViewer';
 import { OrdersTable } from './components/OrdersTable';
 import { Modal } from './components/Modal';
 import { AddProductForm } from './components/AddProductForm';
+import { AddOrderForm } from './components/AddOrderForm';
 import { ArchitectureView } from './components/ArchitectureView';
 import GetStarted from './pages/GetStarted';
 import { AlertCircle, CheckCircle2, TrendingUp, Package, RefreshCw, ShoppingCart, Plus, Search, Info } from 'lucide-react';
@@ -33,6 +34,7 @@ function App() {
   const [audit, setAudit] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -69,6 +71,11 @@ function App() {
     fetchData();
   };
 
+  const handleOrderAdded = () => {
+    setIsOrderModalOpen(false);
+    fetchData();
+  };
+
   // Custom Loading Screen only for invalid initial state, 
   // but since we have Intro, we can load data BEHIND the intro.
   // We won't block render with "Loading..." text anymore if Intro is up.
@@ -102,6 +109,9 @@ function App() {
                 <h2 className="text-2xl font-bold text-slate-900">Customer Orders</h2>
                 <p className="text-slate-500 text-sm">Real-time Order History</p>
               </div>
+              <button onClick={() => setIsOrderModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
+                <Plus size={16} /> Add Order
+              </button>
             </div>
             <Card title={null}>
               <OrdersTable data={orders} />
@@ -186,16 +196,7 @@ function App() {
               </div>
             </div>
 
-            {/* Info Section */}
-            <div className="bg-sky-50 border border-sky-100 rounded-xl p-6 flex gap-4">
-              <Info className="text-sky-600 shrink-0" size={24} />
-              <div>
-                <h3 className="text-sky-900 font-bold mb-1">{t('systemArchitecture')}</h3>
-                <p className="text-sky-800/80 text-sm leading-relaxed">
-                  {t('systemArchitectureDesc')}
-                </p>
-              </div>
-            </div>
+
             <div className="flex justify-between items-center mt-8 mb-4">
               <h3 className="text-xl font-bold text-slate-900">{t('quickInventoryManagement')}</h3>
               <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
@@ -244,6 +245,10 @@ function App() {
           {/* Modal */}
           <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('addNewProduct')}>
             <AddProductForm onSuccess={handleProductAdded} onCancel={() => setIsModalOpen(false)} />
+          </Modal>
+
+          <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="Create New Order">
+            <AddOrderForm onSuccess={handleOrderAdded} onCancel={() => setIsOrderModalOpen(false)} />
           </Modal>
 
         </main>
