@@ -57,9 +57,8 @@ export function AddOrderForm({ onSuccess, onCancel }) {
           value={formData.customer_tier}
           onChange={e => setFormData({ ...formData, customer_tier: parseInt(e.target.value) })}
         >
-          <option value={1}>Standard (Tier 1)</option>
-          <option value={2}>VIP (Tier 2)</option>
-          <option value={3}>Premium (Tier 3)</option>
+          <option value={1}>Standard (Base Priority)</option>
+          <option value={2}>VIP (+50 Priority)</option>
         </select>
       </div>
 

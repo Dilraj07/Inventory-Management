@@ -15,40 +15,43 @@ class ShippingQueue:
     def add_order(self, order_details):
         """
         Enqueue a new order with calculated priority.
-        Priority Score = (Tier * 10) + (100 - Days_To_Expiry)
+        
+        Priority Score Calculation:
+        - VIP Customer: +50 points
+        - Standard Customer: +0 points
+        - Base: (100 - days_remaining) for urgency
+        
+        Max-Heap ensures highest priority is processed first.
         """
-        # Extract factors (Defaults used if missing for simulation stability)
-        tier = order_details.get('tier', 1) 
+        # Extract factors
+        tier = order_details.get('tier', 1)  # 1 = Standard, 2 = VIP
         days_to_expiry = order_details.get('days_remaining', 30)
         
         # Calculate Score & Reason
         priority_reason = "Standard"
         priority_score = 0
         
-        # 1. Critical: Expiring Soon (FEFO) - Highest Weight
-        if days_to_expiry < 7:
-            priority_score += 500  # Jump to top
-            priority_reason = "Expiring Soon"
-        
-        # 2. Tier: Premium > VIP > Standard
-        if tier == 3:
+        # 1. VIP Customer Bonus (+50 points)
+        if tier == 2:
             priority_score += 50
-            if priority_reason == "Standard": priority_reason = "Premium Customer"
-        elif tier == 2:
-            priority_score += 30
-            if priority_reason == "Standard": priority_reason = "VIP Customer"
-            
-        # 3. Urgency fine-tuning
+            priority_reason = "VIP"
+        
+        # 2. Urgency based on days remaining
+        # Lower days = Higher urgency = Higher score
         priority_score += (100 - days_to_expiry)
         
-        # Determine Status - Separate Blocked Orders
+        # Ensure minimum score of 1
+        priority_score = max(1, priority_score)
+        
+        # Determine Status
         status = order_details.get('status', 'PENDING')
         
-        # Python's heapq is Min-Heap, so store negative score for Max-Heap behavior
+        # Python's heapq is Min-Heap, so store NEGATIVE score for Max-Heap behavior
+        # This means highest priority (largest score) will be at the top
         heapq.heappush(self.heap, (-priority_score, self.entry_count, {**order_details, 'priority_reason': priority_reason, 'priority_score': priority_score}))
         self.entry_count += 1
         
-        print(f"[SMART BATCH] Order added: {order_details['order_id']} (Reason: {priority_reason}, Score: {priority_score})")
+        print(f"[MAX-HEAP] Order added: {order_details['order_id']} | Tier: {priority_reason} | Score: {priority_score}")
 
     def process_next_order(self):
         """Dequeue the highest priority order."""
