@@ -639,6 +639,79 @@ def get_inventory_stability():
         
     return bst.get_stability_report()
 
+@app.get("/api/inventory/bst-filter")
+def get_bst_filtered_inventory(subtree: str = "all"):
+    """
+    Returns inventory data filtered by BST subtree.
+    
+    Query params:
+        subtree: 'all' | 'left' | 'right' | 'root'
+        
+    - 'all': Full in-order traversal (default)
+    - 'left': Only left subtree (Critical items - days_remaining < root)
+    - 'right': Only right subtree (Stable items - days_remaining >= root)
+    - 'root': Only the root node
+    
+    This demonstrates the BST property where:
+        Left Child < Parent < Right Child
+    """
+    products = get_product_lookup()
+    bst = InventoryBST()
+    
+    # Pre-calculate days for all products
+    product_days = []
+    for sku, details in products.items():
+        days = max(1, int(details['stock'] / 5))
+        product_days.append((sku, details, days))
+    
+    # Find a product with 10-15 days remaining to use as root (ideal split point)
+    # This creates a meaningful division: critical (<12) vs stable (>=12)
+    ideal_root = None
+    remaining_products = []
+    
+    for sku, details, days in product_days:
+        if ideal_root is None and 10 <= days <= 15:
+            ideal_root = (sku, details, days)
+        else:
+            remaining_products.append((sku, details, days))
+    
+    # If no ideal root found, pick closest to 12 days
+    if ideal_root is None and product_days:
+        product_days_sorted = sorted(product_days, key=lambda x: abs(x[2] - 12))
+        ideal_root = product_days_sorted[0]
+        remaining_products = product_days_sorted[1:]
+    
+    # Insert ideal root FIRST (becomes the BST root)
+    if ideal_root:
+        bst.insert(ideal_root[2], ideal_root[0], ideal_root[1])
+    
+    # Insert remaining products
+    for sku, details, days in remaining_products:
+        bst.insert(days, sku, details)
+    
+    root_info = bst.get_root_info()
+    
+    if subtree == "left":
+        data = bst.get_left_subtree()
+        description = f"Left Subtree: Items with Days Remaining < {root_info['days_remaining']} (Root: {root_info['name']})"
+    elif subtree == "right":
+        data = bst.get_right_subtree()
+        description = f"Right Subtree: Items with Days Remaining >= {root_info['days_remaining']} (Root: {root_info['name']})"
+    elif subtree == "root":
+        data = [root_info] if root_info else []
+        description = f"Root Node: {root_info['name']} with {root_info['days_remaining']} days remaining"
+    else:
+        data = bst.get_stability_report()
+        description = "All Items: Full BST In-Order Traversal (Sorted by Days Remaining)"
+    
+    return {
+        "items": data,
+        "count": len(data),
+        "filter": subtree,
+        "description": description,
+        "root": root_info
+    }
+
 @app.get("/api/audit/next")
 def get_audit_list():
     # Build a fresh list for the view
