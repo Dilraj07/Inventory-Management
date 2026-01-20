@@ -197,24 +197,17 @@ export function InventoryTable({ data, onUpdate }) {
             </tr>
           ) : (
             filteredData.map((item, idx) => {
-              const isRoot = bstData.root && item.sku === bstData.root.sku;
               return (
-                <tr key={item.sku} className={`group transition-all hover:bg-sky-50/30 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'} ${isRoot ? 'ring-2 ring-amber-400 ring-inset' : ''}`}>
+                <tr key={item.sku} className={`group transition-all hover:bg-sky-50/30 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${isRoot ? 'bg-amber-100 text-amber-600' :
-                        item.days_remaining < 7 ? 'bg-rose-50 text-rose-600' :
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${item.days_remaining < 7 ? 'bg-rose-50 text-rose-600' :
                           'bg-indigo-50 text-indigo-600'
                         }`}>
-                        {isRoot ? <Target size={16} /> : item.name?.charAt(0)}
+                        {item.name?.charAt(0)}
                       </div>
                       <div>
                         <span className="font-semibold text-slate-700">{item.name}</span>
-                        {isRoot && (
-                          <span className="ml-2 text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
-                            ROOT
-                          </span>
-                        )}
                       </div>
                     </div>
                   </td>
