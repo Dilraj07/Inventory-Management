@@ -9,6 +9,7 @@ import { Modal } from './components/Modal';
 import { AddProductForm } from './components/AddProductForm';
 import { AddOrderForm } from './components/AddOrderForm';
 import { ArchitectureView } from './components/ArchitectureView';
+import { AuditSchedule } from './components/AuditSchedule';
 import GetStarted from './pages/GetStarted';
 import { AlertCircle, CheckCircle2, TrendingUp, Package, RefreshCw, ShoppingCart, Plus, Search, Info } from 'lucide-react';
 import { useLanguage } from './contexts/LanguageContext';
@@ -127,21 +128,7 @@ function App() {
       case 'reports':
         return (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">{t('systemReports')}</h2>
-              <p className="text-slate-500 text-sm">{t('auditSchedules')}</p>
-            </div>
-            <Card title={t('auditRotation')}>
-              <div className="relative pl-6 border-l-2 border-slate-100 space-y-6 my-2">
-                {audit.slice(0, 5).map((sku, i) => (
-                  <div key={i} className="relative">
-                    <span className={`absolute -left-[29px] w-4 h-4 rounded-full border-2 border-white box-content ${i === 0 ? 'bg-sky-500 ring-4 ring-sky-50' : 'bg-slate-200'}`}></span>
-                    <p className={`text-sm ${i === 0 ? 'text-slate-900 font-medium' : 'text-slate-400'}`}>{t('auditShelf')}: <span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded ml-1">{sku}</span></p>
-                    {i === 0 && <p className="text-xs text-sky-600 mt-1 font-medium bg-sky-50 inline-block px-2 py-0.5 rounded-full">{t('pendingInspection')}</p>}
-                  </div>
-                ))}
-              </div>
-            </Card>
+            <AuditSchedule />
             <ArchitectureView />
           </div>
         );
