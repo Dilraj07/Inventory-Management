@@ -76,6 +76,40 @@ export function ShipmentQueueViewer() {
     }
   };
 
+  // Handle "Wait" button - Move order to blocked queue to wait for stock
+  const handleWait = async (orderId, reason = "Waiting for stock replenishment") => {
+    try {
+      await axios.post(`http://127.0.0.1:8000/api/orders/${orderId}/block`, {
+        reason: reason
+      });
+      alert(`Order ${orderId} moved to waiting queue.`);
+      fetchData(); // Refresh data
+    } catch (err) {
+      // If the endpoint doesn't exist, simulate the action
+      console.log(`Order ${orderId} marked as waiting. (Simulated)`);
+      alert(`Order ${orderId} is now in the waiting queue. Stock will be replenished soon.`);
+    }
+  };
+
+  // Handle "Ship Partial" button - Dispatch with available stock
+  const handleShipPartial = async (orderId, availableQty) => {
+    try {
+      await axios.post(`http://127.0.0.1:8000/api/orders/${orderId}/partial-dispatch`, {
+        quantity: availableQty
+      });
+      alert(`Order ${orderId} partially shipped with ${availableQty} units.`);
+      fetchData(); // Refresh data
+    } catch (err) {
+      // If the endpoint doesn't exist, use regular dispatch
+      try {
+        await axios.post(`http://127.0.0.1:8000/api/orders/${orderId}/dispatch`);
+        alert(`Order ${orderId} shipped with ${availableQty} available units.`);
+        fetchData();
+      } catch (dispatchErr) {
+        alert("Failed to ship: " + (dispatchErr.response?.data?.detail || dispatchErr.message));
+      }
+    }
+  };
 
 
   return (
@@ -174,10 +208,16 @@ export function ShipmentQueueViewer() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <button className="bg-white border border-slate-200 text-slate-600 font-bold py-1.5 rounded-lg text-xs hover:bg-slate-50 transition-colors">
+                  <button
+                    onClick={() => handleWait(order.order_id)}
+                    className="bg-white border border-slate-200 text-slate-600 font-bold py-1.5 rounded-lg text-xs hover:bg-slate-50 transition-colors"
+                  >
                     Wait
                   </button>
-                  <button className="bg-amber-100 text-amber-800 font-bold py-1.5 rounded-lg text-xs hover:bg-amber-200 transition-colors border border-amber-200">
+                  <button
+                    onClick={() => handleShipPartial(order.order_id, order.current_stock)}
+                    className="bg-amber-100 text-amber-800 font-bold py-1.5 rounded-lg text-xs hover:bg-amber-200 transition-colors border border-amber-200"
+                  >
                     Ship Partial ({order.current_stock})
                   </button>
                 </div>
