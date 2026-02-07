@@ -840,3 +840,264 @@ def delete_product(sku: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- DEBUG ENDPOINTS (Glass Box Visualizer) ---
+
+@app.get("/api/debug/heap-state")
+def get_heap_state():
+    """
+    Returns raw Min-Heap array and tree structure for visualization.
+    Used by Dashboard terminal view.
+    """
+    heap = build_reorder_heap()
+    products = get_product_lookup()
+    
+    # Build array representation
+    heap_array = []
+    for score, sku in heap:
+        prod = products.get(sku, {})
+        days = max(1, int(prod.get('stock', 0) / 5))
+        heap_array.append({
+            "index": len(heap_array),
+            "sku": sku,
+            "name": prod.get('name', 'Unknown'),
+            "days_remaining": days,
+            "priority_score": score
+        })
+    
+    # Build tree structure (parent-child relationships)
+    nodes = []
+    edges = []
+    for i, item in enumerate(heap_array):
+        nodes.append({
+            "id": f"node-{i}",
+            "label": item['sku'],
+            "value": item['days_remaining'],
+            "name": item['name']
+        })
+        # Parent index = (i-1) // 2
+        if i > 0:
+            parent_idx = (i - 1) // 2
+            edges.append({
+                "from": f"node-{parent_idx}",
+                "to": f"node-{i}"
+            })
+    
+    return {
+        "type": "min_heap",
+        "description": "Priority Queue for reorder alerts. Root = most urgent item.",
+        "complexity": {
+            "insert": "O(log N)",
+            "extract_min": "O(log N)",
+            "peek": "O(1)"
+        },
+        "raw_array": heap_array,
+        "tree": {"nodes": nodes, "edges": edges},
+        "size": len(heap_array)
+    }
+
+
+@app.get("/api/debug/shipping-heap-state")
+def get_shipping_heap_state():
+    """
+    Returns raw Max-Heap array from shipping queue for visualization.
+    Used by Shipments terminal view.
+    """
+    raw_queue = shipping_queue.get_queue_status()
+    products = get_product_lookup()
+    
+    # Reconstruct heap array from queue
+    heap_array = []
+    for i, order in enumerate(raw_queue):
+        heap_array.append({
+            "index": i,
+            "order_id": order.get('order_id'),
+            "item_name": order.get('item_name', 'Unknown'),
+            "priority_score": order.get('priority_score', 0),
+            "priority_reason": order.get('priority_reason', 'Standard'),
+            "days_remaining": order.get('days_remaining', 30)
+        })
+    
+    # Build tree structure
+    nodes = []
+    edges = []
+    for i, item in enumerate(heap_array):
+        nodes.append({
+            "id": f"node-{i}",
+            "label": item['order_id'],
+            "value": item['priority_score'],
+            "reason": item['priority_reason']
+        })
+        if i > 0:
+            parent_idx = (i - 1) // 2
+            edges.append({
+                "from": f"node-{parent_idx}",
+                "to": f"node-{i}"
+            })
+    
+    return {
+        "type": "max_heap",
+        "description": "Shipping Priority Queue. Root = highest priority order (VIP/Urgent).",
+        "complexity": {
+            "insert": "O(log N)",
+            "extract_max": "O(log N)",
+            "peek": "O(1)"
+        },
+        "raw_array": heap_array,
+        "tree": {"nodes": nodes, "edges": edges},
+        "size": len(heap_array)
+    }
+
+
+@app.get("/api/debug/bst-structure")
+def get_bst_structure():
+    """
+    Returns BST nodes and edges as JSON for tree visualization.
+    Used by Reporting terminal view.
+    """
+    products = get_product_lookup()
+    bst = InventoryBST()
+    
+    # Build BST with strategic root selection
+    product_list = []
+    for sku, details in products.items():
+        days = max(1, int(details['stock'] / 5))
+        product_list.append((sku, details, days))
+    
+    # Find ideal root (10-15 days)
+    ideal_root = None
+    remaining = []
+    for sku, details, days in product_list:
+        if ideal_root is None and 10 <= days <= 15:
+            ideal_root = (sku, details, days)
+        else:
+            remaining.append((sku, details, days))
+    
+    if ideal_root is None and product_list:
+        sorted_by_median = sorted(product_list, key=lambda x: abs(x[2] - 12))
+        ideal_root = sorted_by_median[0]
+        remaining = sorted_by_median[1:]
+    
+    if ideal_root:
+        bst.insert(ideal_root[2], ideal_root[0], ideal_root[1])
+    for sku, details, days in remaining:
+        bst.insert(days, sku, details)
+    
+    # Recursive tree builder
+    def build_tree_json(node, node_id=0):
+        if not node:
+            return None, [], []
+        
+        name_val = node.product_name['name'] if isinstance(node.product_name, dict) else node.product_name
+        
+        current_node = {
+            "id": f"bst-{node_id}",
+            "sku": node.sku,
+            "name": name_val,
+            "days_remaining": node.days_remaining,
+            "status": "critical" if node.days_remaining < 7 else "warning" if node.days_remaining < 15 else "stable"
+        }
+        
+        nodes = [current_node]
+        edges = []
+        
+        next_id = node_id + 1
+        if node.left:
+            left_node, left_nodes, left_edges = build_tree_json(node.left, next_id)
+            nodes.extend(left_nodes)
+            edges.append({"from": f"bst-{node_id}", "to": f"bst-{next_id}", "side": "left"})
+            edges.extend(left_edges)
+            next_id += len(left_nodes)
+        
+        if node.right:
+            right_node, right_nodes, right_edges = build_tree_json(node.right, next_id)
+            nodes.extend(right_nodes)
+            edges.append({"from": f"bst-{node_id}", "to": f"bst-{next_id}", "side": "right"})
+            edges.extend(right_edges)
+        
+        return current_node, nodes, edges
+    
+    root_node, nodes, edges = build_tree_json(bst.root)
+    
+    # In-order traversal path
+    traversal = bst.get_stability_report()
+    traversal_path = [item['sku'] for item in traversal]
+    
+    return {
+        "type": "binary_search_tree",
+        "description": "Inventory sorted by stability. Left = Critical, Right = Stable.",
+        "complexity": {
+            "insert": "O(log N) avg, O(N) worst",
+            "search": "O(log N) avg",
+            "in_order": "O(N)"
+        },
+        "tree": {"nodes": nodes, "edges": edges},
+        "in_order_path": traversal_path,
+        "root": root_node,
+        "size": len(nodes)
+    }
+
+
+@app.get("/api/debug/hashset-state")
+def get_hashset_state():
+    """
+    Returns blocked lots Hash Set contents for safety gate visualization.
+    Used by Shipments terminal view.
+    """
+    blocked_lots = list(safety_officer.blocked_lots)
+    
+    # Simulate hash buckets for visualization
+    bucket_count = 8
+    buckets = [[] for _ in range(bucket_count)]
+    
+    for lot in blocked_lots:
+        bucket_idx = hash(lot) % bucket_count
+        buckets[bucket_idx].append(lot)
+    
+    return {
+        "type": "hash_set",
+        "description": "Safety Gate - O(1) lookup for blocked/recalled lots.",
+        "complexity": {
+            "add": "O(1) avg",
+            "contains": "O(1) avg",
+            "remove": "O(1) avg"
+        },
+        "blocked_lots": blocked_lots,
+        "buckets": [{"index": i, "items": b} for i, b in enumerate(buckets)],
+        "size": len(blocked_lots)
+    }
+
+
+@app.get("/api/debug/circular-list-state")
+def get_circular_list_state():
+    """
+    Returns Circular Linked List structure for audit visualization.
+    """
+    products = get_product_lookup()
+    
+    # Build list of SKUs (limited for clean visualization)
+    skus = list(products.keys())[:12]  # Limit to 12 for clean circle
+    
+    nodes = []
+    for i, sku in enumerate(skus):
+        prod = products.get(sku, {})
+        nodes.append({
+            "index": i,
+            "sku": sku,
+            "name": prod.get('name', 'Unknown'),
+            "next_index": (i + 1) % len(skus)
+        })
+    
+    return {
+        "type": "circular_linked_list",
+        "description": "Audit Schedule - continuous rotation through all products.",
+        "complexity": {
+            "get_next": "O(1)",
+            "add": "O(N)",
+            "traverse": "O(N)"
+        },
+        "nodes": nodes,
+        "current_pointer": 0,
+        "size": len(nodes)
+    }

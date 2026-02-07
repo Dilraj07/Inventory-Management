@@ -16,6 +16,9 @@ import { useLanguage } from './contexts/LanguageContext';
 
 import { AnimatePresence, motion } from 'framer-motion';
 
+// DSA Visualization Components
+import { TerminalButton, StructureOverlay, MinHeapTree, BSTVisualization, OperationToast } from './components/dsa';
+
 // ... (imports remain)
 
 
@@ -36,6 +39,45 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+
+  // DSA Visualization State
+  const [heapOverlayOpen, setHeapOverlayOpen] = useState(false);
+  const [heapData, setHeapData] = useState(null);
+  const [bstOverlayOpen, setBstOverlayOpen] = useState(false);
+  const [bstData, setBstData] = useState(null);
+  const [ordersOverlayOpen, setOrdersOverlayOpen] = useState(false);
+  const [ordersHeapData, setOrdersHeapData] = useState(null);
+  const [operationToast, setOperationToast] = useState(null);
+
+  // Fetch heap state for Dashboard visualization
+  const fetchHeapState = async () => {
+    try {
+      const res = await api.get('/debug/heap-state');
+      setHeapData(res.data);
+    } catch (error) {
+      console.error("Failed to fetch heap state", error);
+    }
+  };
+
+  // Fetch BST state for Inventory visualization
+  const fetchBstState = async () => {
+    try {
+      const res = await api.get('/debug/bst-structure');
+      setBstData(res.data);
+    } catch (error) {
+      console.error("Failed to fetch BST state", error);
+    }
+  };
+
+  // Fetch shipping heap for Orders visualization
+  const fetchOrdersHeapState = async () => {
+    try {
+      const res = await api.get('/debug/shipping-heap-state');
+      setOrdersHeapData(res.data);
+    } catch (error) {
+      console.error("Failed to fetch orders heap state", error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -93,9 +135,18 @@ function App() {
                 <h2 className="text-2xl font-bold text-slate-900">{t('inventoryManagement')}</h2>
                 <p className="text-slate-500 text-sm">{t('sortedByStability')}</p>
               </div>
-              <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
-                <Plus size={16} /> {t('addProduct')}
-              </button>
+              <div className="flex items-center gap-3">
+                <TerminalButton
+                  onClick={() => {
+                    fetchBstState();
+                    setBstOverlayOpen(true);
+                  }}
+                  label="BST Structure"
+                />
+                <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
+                  <Plus size={16} /> {t('addProduct')}
+                </button>
+              </div>
             </div>
             <Card title={t('rawDataView')}>
               <InventoryTable data={inventory} onUpdate={fetchData} />
@@ -110,9 +161,18 @@ function App() {
                 <h2 className="text-2xl font-bold text-slate-900">Customer Orders</h2>
                 <p className="text-slate-500 text-sm">Real-time Order History</p>
               </div>
-              <button onClick={() => setIsOrderModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
-                <Plus size={16} /> Add Order
-              </button>
+              <div className="flex items-center gap-3">
+                <TerminalButton
+                  onClick={() => {
+                    fetchOrdersHeapState();
+                    setOrdersOverlayOpen(true);
+                  }}
+                  label="Orders Priority Queue"
+                />
+                <button onClick={() => setIsOrderModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
+                  <Plus size={16} /> Add Order
+                </button>
+              </div>
             </div>
             <Card title={null}>
               <OrdersTable data={orders} />
@@ -150,6 +210,14 @@ function App() {
                       {priority?.days_remaining < 7 ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
                       {priority?.days_remaining < 7 ? t('priorityHeapRoot') : t('systemHealthy')}
                     </span>
+                    {/* Terminal Button for Min-Heap Overlay */}
+                    <TerminalButton
+                      onClick={() => {
+                        fetchHeapState();
+                        setHeapOverlayOpen(true);
+                      }}
+                      label="View Min-Heap Structure"
+                    />
                   </div>
                   <h2 className="text-3xl font-bold text-slate-900 mb-1">{priority?.name || "Unknown Product"}</h2>
                   <p className="text-slate-500 text-sm">{t('forecastedStockout')}: <strong className={priority?.days_remaining < 7 ? "text-rose-600" : "text-slate-700"}>{Math.round(priority?.days_remaining)} {t('daysRemaining')}</strong></p>
@@ -240,6 +308,84 @@ function App() {
 
         </main>
       </div>
+
+      {/* Min-Heap Visualization Overlay */}
+      <StructureOverlay
+        isOpen={heapOverlayOpen}
+        onClose={() => setHeapOverlayOpen(false)}
+        title="Min-Heap: Reorder Priority Queue"
+        type={heapData?.type || 'min_heap'}
+        description={heapData?.description}
+        complexity={heapData?.complexity}
+        rawData={heapData}
+      >
+        <MinHeapTree
+          data={heapData}
+          onNodeClick={(node) => {
+            setOperationToast({
+              operation: 'PEEK',
+              result: `${node.label} (${node.name}) - ${node.value} days`,
+              complexity: 'O(1)'
+            });
+          }}
+        />
+      </StructureOverlay>
+
+      {/* BST Visualization Overlay for Inventory */}
+      <StructureOverlay
+        isOpen={bstOverlayOpen}
+        onClose={() => setBstOverlayOpen(false)}
+        title="BST: Inventory Stability Tree"
+        type={bstData?.type || 'binary_search_tree'}
+        description={bstData?.description}
+        complexity={bstData?.complexity}
+        rawData={bstData}
+      >
+        <BSTVisualization
+          data={bstData}
+          onNodeClick={(node) => {
+            setOperationToast({
+              operation: 'SEARCH',
+              result: `${node.sku} (${node.name}) - ${node.days_remaining} days - ${node.status}`,
+              complexity: 'O(log N)'
+            });
+          }}
+        />
+      </StructureOverlay>
+
+      {/* Orders Priority Queue Overlay */}
+      <StructureOverlay
+        isOpen={ordersOverlayOpen}
+        onClose={() => setOrdersOverlayOpen(false)}
+        title="Max-Heap: Orders Priority Queue"
+        type={ordersHeapData?.type || 'max_heap'}
+        description={ordersHeapData?.description}
+        complexity={ordersHeapData?.complexity}
+        rawData={ordersHeapData}
+      >
+        <MinHeapTree
+          data={ordersHeapData}
+          onNodeClick={(node) => {
+            setOperationToast({
+              operation: 'PEEK_MAX',
+              result: `${node.label} - Score: ${node.value}`,
+              complexity: 'O(1)'
+            });
+          }}
+        />
+      </StructureOverlay>
+
+      {/* Operation Toast */}
+      <AnimatePresence>
+        {operationToast && (
+          <OperationToast
+            operation={operationToast.operation}
+            result={operationToast.result}
+            complexity={operationToast.complexity}
+            onDismiss={() => setOperationToast(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
