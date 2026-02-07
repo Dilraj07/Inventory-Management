@@ -1,14 +1,15 @@
-import React from 'react';
-import { LayoutDashboard, Package, ShoppingCart, BarChart3, Settings, LogOut, HelpCircle, Truck } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, BarChart3, Settings, HelpCircle, Truck, ClipboardList, FileText } from 'lucide-react';
+import axios from 'axios';
 import { LanguageSelector } from './LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export function Sidebar({ activeTab, onTabChange }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { id: 'inventory', icon: Package, label: t('inventory') },
+    { id: 'orders', icon: ClipboardList, label: 'Orders' }, // TODO: Add translation later
     { id: 'shipments', icon: Truck, label: t('shipments') },
     { id: 'reports', icon: BarChart3, label: t('reporting') },
   ];
@@ -29,7 +30,7 @@ export function Sidebar({ activeTab, onTabChange }) {
           <h1 className="font-bold text-2xl text-slate-900 tracking-tight leading-none">
             {t('appName')}
           </h1>
-          <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">Predictive System</p>
+          <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">Inventory Management</p>
         </div>
       </div>
 
@@ -55,9 +56,7 @@ export function Sidebar({ activeTab, onTabChange }) {
               </span>
 
               {/* Active Indicator (Pill Shape) */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-slate-900 rounded-r-full"></div>
-              )}
+              {/* Active Indicator (Pill Shape) - REMOVED */}
             </button>
           );
         })}
@@ -68,15 +67,31 @@ export function Sidebar({ activeTab, onTabChange }) {
         {/* Language Selector */}
         <LanguageSelector />
 
-        {/* Logout Button */}
-        <button className="w-full flex items-center h-14 rounded-[24px] text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
-          <div className="w-14 h-14 flex items-center justify-center shrink-0">
-            <LogOut size={22} />
-          </div>
-          <span className="text-sm font-bold">
-            {t('logout')}
-          </span>
+        <button
+          onClick={async () => {
+            try {
+              // Trigger download
+              const response = await axios.get(`http://127.0.0.1:8000/api/reports/download?lang=${language}`, {
+                responseType: 'blob',
+              });
+              const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', 'pirs_report_summary.pdf');
+              document.body.appendChild(link);
+              link.click();
+              link.parentNode.removeChild(link);
+            } catch (err) {
+              console.error("Failed to download report", err);
+              alert("Failed to download PDF report. Ensure backend has 'reportlab' installed.");
+            }
+          }}
+          className="w-full flex items-center justify-center gap-2 h-12 bg-indigo-600 text-white rounded-[16px] font-bold text-sm shadow-indigo-200 shadow-lg hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all"
+        >
+          <FileText size={18} />
+          {t('downloadReport') || "Download PDF"}
         </button>
+
       </div>
 
     </div>

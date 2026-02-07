@@ -8,7 +8,7 @@ from reporting import InventoryBST, AuditList
 from prediction_engine import calculate_priority_score
 
 def main_simulation():
-    print("Welcome to PIRS - Predictive Inventory & Reorder System")
+    print("Welcome to PIRS - Inventory Management & Reorder System")
     print("=====================================================")
     
     # 1. Initialize System
@@ -16,7 +16,7 @@ def main_simulation():
     setup_database()
     
     # 2. Check Predictions & Prioritize (Min-Heap)
-    print("\n[PHASE 2] Predicting Stockouts & Prioritizing Reorders...")
+    print("\n[PHASE 2] Analyzing Stockouts & Prioritizing Reorders...")
     reorder_heap = build_reorder_heap()
     
     if reorder_heap:

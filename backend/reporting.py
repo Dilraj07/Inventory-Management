@@ -45,11 +45,13 @@ class InventoryBST:
             # Check if product_name is dict (from API patch) or str
             name_val = node.product_name['name'] if isinstance(node.product_name, dict) else node.product_name
             stock_val = node.product_name['stock'] if isinstance(node.product_name, dict) else 0
+            price_val = node.product_name['price'] if isinstance(node.product_name, dict) else 0.0
 
             result.append({
                 "sku": node.sku,
                 "name": name_val,
                 "stock_hint": stock_val, # Added this field
+                "price": price_val,
                 "days_remaining": node.days_remaining
             })
             self.in_order_traversal(node.right, result)
@@ -63,6 +65,37 @@ class InventoryBST:
             status = "CRITICAL" if item['days_remaining'] < 7 else "STABLE"
             print(f"[{status}] {item['name']} ({item['sku']}): {item['days_remaining']} days left")
         return items
+
+    def get_left_subtree(self):
+        """
+        Returns items in the LEFT subtree of the root (Critical Items).
+        These are products with days_remaining LESS than the root's value.
+        Demonstrates BST property: Left child < Parent
+        """
+        if not self.root or not self.root.left:
+            return []
+        return self.in_order_traversal(self.root.left)
+
+    def get_right_subtree(self):
+        """
+        Returns items in the RIGHT subtree of the root (Stable Items).
+        These are products with days_remaining GREATER than or EQUAL to the root's value.
+        Demonstrates BST property: Right child >= Parent
+        """
+        if not self.root or not self.root.right:
+            return []
+        return self.in_order_traversal(self.root.right)
+
+    def get_root_info(self):
+        """Returns information about the root node for context."""
+        if not self.root:
+            return None
+        name_val = self.root.product_name['name'] if isinstance(self.root.product_name, dict) else self.root.product_name
+        return {
+            "sku": self.root.sku,
+            "name": name_val,
+            "days_remaining": self.root.days_remaining
+        }
 
 
 class AuditNode:
