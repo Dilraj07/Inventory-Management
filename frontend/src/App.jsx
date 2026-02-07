@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { Sidebar } from './components/Sidebar';
+import { Navbar } from './components/Navbar';
+import { LiveTerminal, addTerminalLog } from './components/LiveTerminal';
 import { Card } from './components/Card';
 import { InventoryTable } from './components/InventoryTable';
 import { ShipmentQueueViewer } from './components/ShipmentQueueViewer';
@@ -8,28 +9,20 @@ import { OrdersTable } from './components/OrdersTable';
 import { Modal } from './components/Modal';
 import { AddProductForm } from './components/AddProductForm';
 import { AddOrderForm } from './components/AddOrderForm';
-import { ArchitectureView } from './components/ArchitectureView';
-import { AuditSchedule } from './components/AuditSchedule';
-import GetStarted from './pages/GetStarted';
-import { AlertCircle, CheckCircle2, TrendingUp, Package, RefreshCw, ShoppingCart, Plus, Search, Info } from 'lucide-react';
+import { AlertCircle, CheckCircle2, TrendingUp, Package, Plus, Terminal as TerminalIcon } from 'lucide-react';
 import { useLanguage } from './contexts/LanguageContext';
-
-import { AnimatePresence, motion } from 'framer-motion';
-
-// DSA Visualization Components
-import { TerminalButton, StructureOverlay, MinHeapTree, BSTVisualization, OperationToast } from './components/dsa';
-
-// ... (imports remain)
 
 
 // Configure Axios
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api',
 });
+
+// Constants
+const DATA_REFRESH_INTERVAL = 10000; // 10 seconds for better performance
 
 function App() {
   const { t } = useLanguage();
-  const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [summary, setSummary] = useState(null);
   const [priority, setPriority] = useState(null);
@@ -37,49 +30,78 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [audit, setAudit] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [terminalVisible, setTerminalVisible] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
-  // DSA Visualization State
-  const [heapOverlayOpen, setHeapOverlayOpen] = useState(false);
-  const [heapData, setHeapData] = useState(null);
-  const [bstOverlayOpen, setBstOverlayOpen] = useState(false);
-  const [bstData, setBstData] = useState(null);
-  const [ordersOverlayOpen, setOrdersOverlayOpen] = useState(false);
-  const [ordersHeapData, setOrdersHeapData] = useState(null);
-  const [operationToast, setOperationToast] = useState(null);
+  // Set up axios interceptor for terminal logging with detailed messages
+  useEffect(() => {
+    const getDetailedMessage = (endpoint, method, isRequest = true) => {
+      const cleanEndpoint = endpoint.replace('/api', '');
+      
+      if (isRequest) {
+        if (cleanEndpoint.includes('dashboard/summary')) return 'Loading dashboard summary with KPIs';
+        if (cleanEndpoint.includes('priority/top')) return 'Fetching top priority item from Min-Heap';
+        if (cleanEndpoint.includes('inventory/stability')) return 'Analyzing inventory stability using BST';
+        if (cleanEndpoint.includes('inventory/bst-filter')) return 'Applying BST filter for inventory sorting';
+        if (cleanEndpoint.includes('orders/history')) return 'Retrieving customer order history';
+        if (cleanEndpoint.includes('shipment')) return 'Loading shipment queue (FIFO)';
+        if (cleanEndpoint.includes('audit')) return 'Fetching audit schedule (Circular List)';
+        if (cleanEndpoint.includes('products') && method === 'POST') return 'Creating new product entry';
+        if (cleanEndpoint.includes('products') && method === 'PUT') return 'Updating product information';
+        if (cleanEndpoint.includes('products') && method === 'DELETE') return 'Removing product from inventory';
+        return `${method} ${cleanEndpoint}`;
+      } else {
+        if (cleanEndpoint.includes('dashboard/summary')) return 'Dashboard metrics loaded successfully';
+        if (cleanEndpoint.includes('priority/top')) return 'Priority item retrieved (Min-Heap root)';
+        if (cleanEndpoint.includes('inventory/stability')) return 'Inventory analysis complete (BST traversal)';
+        if (cleanEndpoint.includes('inventory/bst-filter')) return 'BST filter applied successfully';
+        if (cleanEndpoint.includes('orders/history')) return 'Order history loaded';
+        if (cleanEndpoint.includes('shipment')) return 'Shipment queue ready';
+        if (cleanEndpoint.includes('audit')) return 'Audit schedule retrieved';
+        if (method === 'POST') return 'Item created successfully';
+        if (method === 'PUT') return 'Item updated successfully';
+        if (method === 'DELETE') return 'Item deleted successfully';
+        return `${method} completed`;
+      }
+    };
 
-  // Fetch heap state for Dashboard visualization
-  const fetchHeapState = async () => {
-    try {
-      const res = await api.get('/debug/heap-state');
-      setHeapData(res.data);
-    } catch (error) {
-      console.error("Failed to fetch heap state", error);
-    }
-  };
+    const requestInterceptor = api.interceptors.request.use(
+      (config) => {
+        const method = config.method.toUpperCase();
+        const message = getDetailedMessage(config.url, method, true);
+        addTerminalLog('API', message);
+        return config;
+      },
+      (error) => {
+        addTerminalLog('ERROR', `Request failed: ${error.message}`);
+        return Promise.reject(error);
+      }
+    );
 
-  // Fetch BST state for Inventory visualization
-  const fetchBstState = async () => {
-    try {
-      const res = await api.get('/debug/bst-structure');
-      setBstData(res.data);
-    } catch (error) {
-      console.error("Failed to fetch BST state", error);
-    }
-  };
+    const responseInterceptor = api.interceptors.response.use(
+      (response) => {
+        const method = response.config.method.toUpperCase();
+        const message = getDetailedMessage(response.config.url, method, false);
+        addTerminalLog('SUCCESS', message);
+        return response;
+      },
+      (error) => {
+        const method = error.config?.method?.toUpperCase() || 'REQUEST';
+        const endpoint = error.config?.url?.replace('/api', '') || 'unknown';
+        const status = error.response?.status;
+        addTerminalLog('ERROR', `${method} ${endpoint} failed - ${status || 'Network error'}`);
+        return Promise.reject(error);
+      }
+    );
 
-  // Fetch shipping heap for Orders visualization
-  const fetchOrdersHeapState = async () => {
-    try {
-      const res = await api.get('/debug/shipping-heap-state');
-      setOrdersHeapData(res.data);
-    } catch (error) {
-      console.error("Failed to fetch orders heap state", error);
-    }
-  };
+    return () => {
+      api.interceptors.request.eject(requestInterceptor);
+      api.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [sumRes, priRes, invRes, audRes, ordRes] = await Promise.all([
         api.get('/dashboard/summary'),
@@ -100,14 +122,14 @@ function App() {
       // Even if data fails, we might want to stop loading to show UI
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Start fetching data immediately
     fetchData();
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, DATA_REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const handleProductAdded = () => {
     setIsModalOpen(false);
@@ -123,7 +145,7 @@ function App() {
   // but since we have Intro, we can load data BEHIND the intro.
   // We won't block render with "Loading..." text anymore if Intro is up.
   // But for safety:
-  if (loading && !showIntro) return <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-400 font-medium">{t('loading')}</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-400 font-medium">{t('loading')}</div>;
 
   const renderContent = () => {
     switch (activeTab) {
@@ -133,20 +155,11 @@ function App() {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">{t('inventoryManagement')}</h2>
-                <p className="text-slate-500 text-sm">{t('sortedByStability')}</p>
+                <p className="text-slate-500 text-sm">Sorted by stability score</p>
               </div>
-              <div className="flex items-center gap-3">
-                <TerminalButton
-                  onClick={() => {
-                    fetchBstState();
-                    setBstOverlayOpen(true);
-                  }}
-                  label="BST Structure"
-                />
-                <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
-                  <Plus size={16} /> {t('addProduct')}
-                </button>
-              </div>
+              <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
+                <Plus size={16} /> {t('addProduct')}
+              </button>
             </div>
             <Card title={t('rawDataView')}>
               <InventoryTable data={inventory} onUpdate={fetchData} />
@@ -161,18 +174,9 @@ function App() {
                 <h2 className="text-2xl font-bold text-slate-900">Customer Orders</h2>
                 <p className="text-slate-500 text-sm">Real-time Order History</p>
               </div>
-              <div className="flex items-center gap-3">
-                <TerminalButton
-                  onClick={() => {
-                    fetchOrdersHeapState();
-                    setOrdersOverlayOpen(true);
-                  }}
-                  label="Orders Priority Queue"
-                />
-                <button onClick={() => setIsOrderModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
-                  <Plus size={16} /> Add Order
-                </button>
-              </div>
+              <button onClick={() => setIsOrderModalOpen(true)} className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sky-700 shadow-sm transition-all">
+                <Plus size={16} /> Add Order
+              </button>
             </div>
             <Card title={null}>
               <OrdersTable data={orders} />
@@ -185,21 +189,13 @@ function App() {
             <ShipmentQueueViewer />
           </div>
         );
-      case 'reports':
-        return (
-          <div className="space-y-6">
-            <AuditSchedule />
-            <ArchitectureView />
-          </div>
-        );
       case 'dashboard':
       default:
         return (
           <div className="space-y-8">
             {/* Dashboard Hero */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Priority Alert (Min-Heap Visualization) */}
-              {/* Priority Alert (Min-Heap Visualization) */}
+              {/* Priority Alert */}
               <div className={`md:col-span-2 relative overflow-hidden p-6 rounded-[2rem] shadow-sm border transition-all ${priority?.days_remaining < 7 ? 'bg-rose-50/80 border-rose-100 shadow-[0_0_20px_rgba(244,63,94,0.15)] backdrop-blur-md' : 'bg-white border-slate-200'
                 } flex items-center justify-between group`}>
 
@@ -210,14 +206,6 @@ function App() {
                       {priority?.days_remaining < 7 ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
                       {priority?.days_remaining < 7 ? t('priorityHeapRoot') : t('systemHealthy')}
                     </span>
-                    {/* Terminal Button for Min-Heap Overlay */}
-                    <TerminalButton
-                      onClick={() => {
-                        fetchHeapState();
-                        setHeapOverlayOpen(true);
-                      }}
-                      label="View Min-Heap Structure"
-                    />
                   </div>
                   <h2 className="text-3xl font-bold text-slate-900 mb-1">{priority?.name || "Unknown Product"}</h2>
                   <p className="text-slate-500 text-sm">{t('forecastedStockout')}: <strong className={priority?.days_remaining < 7 ? "text-rose-600" : "text-slate-700"}>{Math.round(priority?.days_remaining)} {t('daysRemaining')}</strong></p>
@@ -274,118 +262,48 @@ function App() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden font-sans bg-[#F1F5F9]">
-      <AnimatePresence>
-        {showIntro && (
-          <motion.div
-            key="intro"
-            initial={{ y: 0 }}
-            exit={{ y: '-100vh', transition: { duration: 0.8, ease: "easeInOut" } }}
-            className="fixed inset-0 z-[100] bg-white"
+      <div className="flex flex-col h-screen bg-[#F1F5F9]">
+        {/* Top Navbar */}
+        <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+
+        {/* Split View: Content + Live Terminal */}
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Main Content Area */}
+          <main className={`flex-1 p-6 overflow-y-auto transition-all ${terminalVisible ? '' : 'mr-0'}`}>
+            {renderContent()}
+
+            {/* Modals */}
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('addNewProduct')}>
+              <AddProductForm onSuccess={handleProductAdded} onCancel={() => setIsModalOpen(false)} />
+            </Modal>
+
+            <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="Create New Order">
+              <AddOrderForm onSuccess={handleOrderAdded} onCancel={() => setIsOrderModalOpen(false)} />
+            </Modal>
+          </main>
+
+          {/* Terminal Toggle Button */}
+          <button
+            onClick={() => setTerminalVisible(!terminalVisible)}
+            className={`fixed right-6 bottom-6 z-50 flex items-center gap-2 px-4 py-3 rounded-lg font-medium shadow-lg transition-all ${
+              terminalVisible 
+                ? 'bg-slate-800 text-white hover:bg-slate-700' 
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+            }`}
+            title={terminalVisible ? 'Hide Terminal' : 'Show Terminal'}
           >
-            <GetStarted onStart={() => setShowIntro(false)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <TerminalIcon size={20} />
+            <span className="text-sm">{terminalVisible ? 'Hide' : 'Show'} Terminal</span>
+          </button>
 
-      <div className="flex bg-[#F1F5F9] min-h-screen">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-
-        <main className="ml-72 flex-1 p-8 overflow-y-auto h-screen">
-          <header className="flex justify-between items-center mb-8">
-            {/* Dynamic Header based on active tab could go here, but kept simple for now */}
-          </header>
-
-          {renderContent()}
-
-          {/* Modal */}
-          <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('addNewProduct')}>
-            <AddProductForm onSuccess={handleProductAdded} onCancel={() => setIsModalOpen(false)} />
-          </Modal>
-
-          <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="Create New Order">
-            <AddOrderForm onSuccess={handleOrderAdded} onCancel={() => setIsOrderModalOpen(false)} />
-          </Modal>
-
-        </main>
+          {/* Live Terminal Sidebar */}
+          {terminalVisible && (
+            <aside className="w-[500px] p-6 border-l border-slate-200 bg-slate-50 transition-all">
+              <LiveTerminal />
+            </aside>
+          )}
+        </div>
       </div>
-
-      {/* Min-Heap Visualization Overlay */}
-      <StructureOverlay
-        isOpen={heapOverlayOpen}
-        onClose={() => setHeapOverlayOpen(false)}
-        title="Min-Heap: Reorder Priority Queue"
-        type={heapData?.type || 'min_heap'}
-        description={heapData?.description}
-        complexity={heapData?.complexity}
-        rawData={heapData}
-      >
-        <MinHeapTree
-          data={heapData}
-          onNodeClick={(node) => {
-            setOperationToast({
-              operation: 'PEEK',
-              result: `${node.label} (${node.name}) - ${node.value} days`,
-              complexity: 'O(1)'
-            });
-          }}
-        />
-      </StructureOverlay>
-
-      {/* BST Visualization Overlay for Inventory */}
-      <StructureOverlay
-        isOpen={bstOverlayOpen}
-        onClose={() => setBstOverlayOpen(false)}
-        title="BST: Inventory Stability Tree"
-        type={bstData?.type || 'binary_search_tree'}
-        description={bstData?.description}
-        complexity={bstData?.complexity}
-        rawData={bstData}
-      >
-        <BSTVisualization
-          data={bstData}
-          onNodeClick={(node) => {
-            setOperationToast({
-              operation: 'SEARCH',
-              result: `${node.sku} (${node.name}) - ${node.days_remaining} days - ${node.status}`,
-              complexity: 'O(log N)'
-            });
-          }}
-        />
-      </StructureOverlay>
-
-      {/* Orders Priority Queue Overlay */}
-      <StructureOverlay
-        isOpen={ordersOverlayOpen}
-        onClose={() => setOrdersOverlayOpen(false)}
-        title="Max-Heap: Orders Priority Queue"
-        type={ordersHeapData?.type || 'max_heap'}
-        description={ordersHeapData?.description}
-        complexity={ordersHeapData?.complexity}
-        rawData={ordersHeapData}
-      >
-        <MinHeapTree
-          data={ordersHeapData}
-          onNodeClick={(node) => {
-            setOperationToast({
-              operation: 'PEEK_MAX',
-              result: `${node.label} - Score: ${node.value}`,
-              complexity: 'O(1)'
-            });
-          }}
-        />
-      </StructureOverlay>
-
-      {/* Operation Toast */}
-      <AnimatePresence>
-        {operationToast && (
-          <OperationToast
-            operation={operationToast.operation}
-            result={operationToast.result}
-            complexity={operationToast.complexity}
-            onDismiss={() => setOperationToast(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

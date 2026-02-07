@@ -2,35 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Package, Truck, AlertTriangle, CheckCircle, Clock, Zap, MapPin, XCircle, AlertCircle, FileText } from 'lucide-react';
 import axios from 'axios';
 
-// DSA Visualization Components
-import { TerminalButton, StructureOverlay, MaxHeapVisualization, HashSetGate, OperationToast } from './dsa';
-import { AnimatePresence } from 'framer-motion';
-
 export function ShipmentQueueViewer() {
   const [data, setData] = useState({ priority_queue: [], pick_list: [], blocked_orders: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // DSA Visualization State
-  const [overlayOpen, setOverlayOpen] = useState(false);
-  const [overlayType, setOverlayType] = useState('max_heap'); // 'max_heap' | 'hash_set'
-  const [heapData, setHeapData] = useState(null);
-  const [hashSetData, setHashSetData] = useState(null);
-  const [operationToast, setOperationToast] = useState(null);
-
-  const fetchDSAState = async (type) => {
-    try {
-      if (type === 'max_heap') {
-        const res = await axios.get('http://127.0.0.1:8000/api/debug/shipping-heap-state');
-        setHeapData(res.data);
-      } else {
-        const res = await axios.get('http://127.0.0.1:8000/api/debug/hashset-state');
-        setHashSetData(res.data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch DSA state", err);
-    }
-  };
 
   const fetchData = async () => {
     try {
@@ -110,9 +86,8 @@ export function ShipmentQueueViewer() {
       alert(`Order ${orderId} moved to waiting queue.`);
       fetchData(); // Refresh data
     } catch (err) {
-      // If the endpoint doesn't exist, simulate the action
-      console.log(`Order ${orderId} marked as waiting. (Simulated)`);
-      alert(`Order ${orderId} is now in the waiting queue. Stock will be replenished soon.`);
+      console.error("Failed to block order:", err);
+      alert("Failed to move to waiting queue: " + (err.response?.data?.detail || "Backend connection error"));
     }
   };
 
@@ -125,14 +100,8 @@ export function ShipmentQueueViewer() {
       alert(`Order ${orderId} partially shipped with ${availableQty} units.`);
       fetchData(); // Refresh data
     } catch (err) {
-      // If the endpoint doesn't exist, use regular dispatch
-      try {
-        await axios.post(`http://127.0.0.1:8000/api/orders/${orderId}/dispatch`);
-        alert(`Order ${orderId} shipped with ${availableQty} available units.`);
-        fetchData();
-      } catch (dispatchErr) {
-        alert("Failed to ship: " + (dispatchErr.response?.data?.detail || dispatchErr.message));
-      }
+      console.error("Failed to partial ship:", err);
+      alert("Failed to ship partial order: " + (err.response?.data?.detail || "Backend connection error"));
     }
   };
 
@@ -147,24 +116,7 @@ export function ShipmentQueueViewer() {
           </h2>
           <p className="text-slate-500 text-sm">Scenario-Based Workflow: Express vs Shortage vs Standard</p>
         </div>
-        <div className="flex gap-3">
-          {/* Terminal Buttons for DSA Visualization */}
-          <TerminalButton
-            onClick={() => {
-              setOverlayType('max_heap');
-              fetchDSAState('max_heap');
-              setOverlayOpen(true);
-            }}
-            label="Max-Heap Queue"
-          />
-          <TerminalButton
-            onClick={() => {
-              setOverlayType('hash_set');
-              fetchDSAState('hash_set');
-              setOverlayOpen(true);
-            }}
-            label="Hash Set Safety"
-          />
+        <div>
           <button
             onClick={handleDownloadReport}
             className="flex items-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg font-bold text-sm transition-colors border border-indigo-200"
@@ -298,53 +250,6 @@ export function ShipmentQueueViewer() {
 
       </div>
 
-      {/* DSA Visualization Overlay */}
-      <StructureOverlay
-        isOpen={overlayOpen}
-        onClose={() => setOverlayOpen(false)}
-        title={overlayType === 'max_heap' ? 'Max-Heap: Shipping Priority Queue' : 'Hash Set: Safety Gate'}
-        type={overlayType}
-        description={overlayType === 'max_heap' ? heapData?.description : hashSetData?.description}
-        complexity={overlayType === 'max_heap' ? heapData?.complexity : hashSetData?.complexity}
-        rawData={overlayType === 'max_heap' ? heapData : hashSetData}
-      >
-        {overlayType === 'max_heap' ? (
-          <MaxHeapVisualization
-            data={heapData}
-            onNodeClick={(node) => {
-              setOperationToast({
-                operation: 'PEEK_MAX',
-                result: `${node.order_id || node.label} - Score: ${node.priority_score || node.value}`,
-                complexity: 'O(1)'
-              });
-            }}
-          />
-        ) : (
-          <HashSetGate
-            data={hashSetData}
-            onTest={(lotId) => {
-              const isBlocked = hashSetData?.blocked_lots?.includes(lotId);
-              setOperationToast({
-                operation: 'CONTAINS',
-                result: isBlocked ? `❌ Lot ${lotId} is BLOCKED` : `✅ Lot ${lotId} is SAFE`,
-                complexity: 'O(1)'
-              });
-            }}
-          />
-        )}
-      </StructureOverlay>
-
-      {/* Operation Toast */}
-      <AnimatePresence>
-        {operationToast && (
-          <OperationToast
-            operation={operationToast.operation}
-            result={operationToast.result}
-            complexity={operationToast.complexity}
-            onDismiss={() => setOperationToast(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

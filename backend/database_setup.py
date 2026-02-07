@@ -50,66 +50,22 @@ def setup_database():
     import random
     from datetime import datetime, timedelta
 
-    # Explicit Product Catalog from User Images
+    # Simplified Product Catalog - Only 6 items for better visualization
     products_catalog = [
-        # Electronics
-        ('SKU001', 'Mouse (Electronics)', 349.00), ('SKU002', 'Keyboard (Electronics)', 599.00),
-        ('SKU003', 'Monitor (Electronics)', 7499.00), ('SKU004', 'Cable (Electronics)', 199.00),
-        ('SKU005', 'Charger (Electronics)', 449.00), ('SKU006', 'Headset (Electronics)', 899.00),
-        ('SKU007', 'Webcam (Electronics)', 1499.00), ('SKU008', 'Microphone (Electronics)', 599.00),
-        ('SKU009', 'Laptop Stand (Electronics)', 699.00), ('SKU010', 'USB Hub (Electronics)', 399.00),
-        ('SKU011', 'Power Bank (Electronics)', 999.00), ('SKU012', 'HDMI Adapter (Electronics)', 299.00),
-        ('SKU013', 'Router (Electronics)', 1299.00), ('SKU014', 'Switch (Electronics)', 799.00),
-        ('SKU015', 'Speaker (Electronics)', 1199.00),
-        
-        # Office
-        ('SKU016', 'Paper (Office)', 260.00), ('SKU017', 'Pen (Office)', 50.00),
-        ('SKU018', 'Stapler (Office)', 149.00), ('SKU019', 'Binder (Office)', 120.00),
-        ('SKU020', 'Folder (Office)', 25.00), ('SKU021', 'Notepad (Office)', 60.00),
-        ('SKU022', 'Desk Lamp (Office)', 799.00), ('SKU023', 'Chair (Office)', 3499.00),
-        ('SKU024', 'Whiteboard (Office)', 899.00), ('SKU025', 'Marker (Office)', 30.00),
-        ('SKU026', 'Highlighter (Office)', 25.00), ('SKU027', 'Scissors (Office)', 129.00),
-        ('SKU028', 'Tape (Office)', 49.00), ('SKU029', 'Calculator (Office)', 399.00),
-        ('SKU030', 'Shredder (Office)', 2499.00),
-
-        # Kitchen
-        ('SKU031', 'Mug (Kitchen)', 149.00), ('SKU032', 'Plate (Kitchen)', 199.00),
-        ('SKU033', 'Fork (Kitchen)', 249.00), ('SKU034', 'Spoon (Kitchen)', 249.00),
-        ('SKU035', 'Knife (Kitchen)', 299.00), ('SKU036', 'Bowl (Kitchen)', 99.00),
-        ('SKU037', 'Glass (Kitchen)', 399.00), ('SKU038', 'Napkin (Kitchen)', 79.00),
-        ('SKU039', 'Towel (Kitchen)', 149.00), ('SKU040', 'Soap (Kitchen)', 89.00),
-        ('SKU041', 'Sponge (Kitchen)', 49.00), ('SKU042', 'Toaster (Kitchen)', 1199.00),
-        ('SKU043', 'Blender (Kitchen)', 1499.00), ('SKU044', 'Mixer (Kitchen)', 2899.00),
-        ('SKU045', 'Kettle (Kitchen)', 799.00),
-
-        # Automotive
-        ('SKU046', 'Wiper Blade (Automotive)', 349.00), ('SKU047', 'Car Wax (Automotive)', 399.00),
-        ('SKU048', 'Air Freshener (Automotive)', 199.00), ('SKU049', 'Oil Filter (Automotive)', 249.00),
-        ('SKU050', 'Tire shine (Automotive)', 299.00), ('SKU051', 'Seat Cover (Automotive)', 899.00),
-        ('SKU052', 'Phone Mount (Automotive)', 349.00), ('SKU053', 'Vacuum (Automotive)', 999.00),
-        ('SKU054', 'Jump Starter (Automotive)', 3999.00), ('SKU055', 'First Aid Kit (Automotive)', 499.00),
-
-        # Gardening
-        ('SKU056', 'Shovel (Gardening)', 499.00), ('SKU057', 'Rake (Gardening)', 399.00),
-        ('SKU058', 'Gloves (Gardening)', 149.00), ('SKU059', 'Hose (Gardening)', 599.00),
-        ('SKU060', 'Sprinkler (Gardening)', 349.00), ('SKU061', 'Pot (Gardening)', 199.00),
-        ('SKU062', 'Seeds (Gardening)', 99.00), ('SKU063', 'Fertilizer (Gardening)', 249.00),
-        ('SKU064', 'Pruner (Gardening)', 399.00), ('SKU065', 'Trowel (Gardening)', 129.00),
+        ('SKU001', 'Mouse (Electronics)', 349.00),
+        ('SKU002', 'Keyboard (Electronics)', 599.00),
+        ('SKU003', 'Monitor (Electronics)', 7499.00),
+        ('SKU004', 'Paper (Office)', 260.00),
+        ('SKU005', 'Pen (Office)', 50.00),
+        ('SKU006', 'Bowl (Kitchen)', 99.00),
     ]
-
-    # Additional Toys (Randomized as no image data provided)
-    toys = ['Action Figure', 'Doll', 'Puzzle', 'Board Game', 'Card Game', 'Blocks', 'Plush', 'Drone', 'Car Model', 'Train Set']
-    sku_start = 66
-    for i, toy in enumerate(toys):
-        sku = f"SKU{sku_start + i:03d}"
-        products_catalog.append((sku, f"{toy} (Toys)", round(random.uniform(100.0, 5000.0), 2)))
 
     products_data = []
     sales_data = []
     
     for sku, name, cost in products_catalog:
-        # Randomize stock/lead time, but keep price exact
-        stock = random.randint(5, 500) 
+        # Set stock to 1 for all products
+        stock = 1
         lead = random.randint(2, 21)
         
         products_data.append((sku, name, stock, lead, cost))
