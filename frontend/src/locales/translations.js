@@ -20,7 +20,7 @@ export const translations = {
         quickInventoryManagement: "Quick Inventory Management",
         recentInventoryItems: "Recent Inventory Items",
         addProduct: "Add Product",
-        priorityHeapRoot: "Priority #1 (Min-Heap Root)",
+        priorityHeapRoot: "Priority #1",
         systemHealthy: "System Healthy",
 
         // Inventory
@@ -105,7 +105,7 @@ export const translations = {
         quickInventoryManagement: "त्वरित इन्वेंटरी प्रबंधन",
         recentInventoryItems: "हाल की इन्वेंटरी आइटम",
         addProduct: "उत्पाद जोड़ें",
-        priorityHeapRoot: "प्राथमिकता #1 (मिन-हीप रूट)",
+        priorityHeapRoot: "प्राथमिकता #1",
         systemHealthy: "सिस्टम स्वस्थ",
 
         // Inventory
@@ -190,7 +190,7 @@ export const translations = {
         quickInventoryManagement: "ತ್ವರಿತ ದಾಸ್ತಾನು ನಿರ್ವಹಣೆ",
         recentInventoryItems: "ಇತ್ತೀಚಿನ ದಾಸ್ತಾನು ಐಟಂಗಳು",
         addProduct: "ಉತ್ಪನ್ನವನ್ನು ಸೇರಿಸಿ",
-        priorityHeapRoot: "ಆದ್ಯತೆ #1 (ಮಿನ್-ಹೀಪ್ ರೂಟ್)",
+        priorityHeapRoot: "ಆದ್ಯತೆ #1",
         systemHealthy: "ಸಿಸ್ಟಮ್ ಆರೋಗ್ಯಕರ",
 
         // Inventory

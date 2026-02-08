@@ -99,7 +99,7 @@ export function InventoryTable({ data, onUpdate }) {
         {/* Header - Always Visible */}
         <div className="flex items-center gap-2">
           <GitBranch className="text-indigo-600" size={18} />
-          <h3 className="text-sm font-bold text-slate-700">BST Filter (Binary Search Tree)</h3>
+          <h3 className="text-sm font-bold text-slate-700">Filter</h3>
           {bstData.root && (
             <span className="text-xs bg-white/80 px-3 py-1 rounded-full border border-slate-200 text-slate-500">
               Root: <span className="font-bold text-indigo-600">{bstData.root.name}</span> ({bstData.root.days_remaining} days)
@@ -146,7 +146,7 @@ export function InventoryTable({ data, onUpdate }) {
             {bstData.description && (
               <div className="mt-3 p-2 bg-white/60 rounded-lg border border-white/80">
                 <p className="text-xs text-slate-600">
-                  <span className="font-bold text-indigo-600">DSA Insight:</span> {bstData.description}
+                  {bstData.description}
                 </p>
               </div>
             )}

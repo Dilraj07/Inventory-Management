@@ -1,4 +1,5 @@
 fastapi
 uvicorn
 reportlab
-# existing libs are standard (sqlite3, collections, heapq) but good to be explicit if we expanded
+python-multipart
+# standard library: sqlite3, collections, heapq, typing, datetime, random, json, math

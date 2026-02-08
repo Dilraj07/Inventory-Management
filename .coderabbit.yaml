@@ -1,0 +1,26 @@
+# CodeRabbit configuration file
+version: "0.1"
+
+# Language settings
+language: "en-US"
+
+# Review settings
+reviews:
+  profile: "chill" # Can be "assertive" or "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+
+  # Auto-review settings
+  auto_review:
+    enabled: true
+    drafts: false
+
+  # Tool settings
+  tools:
+    ast-grep:
+      rule_dirs:
+        - ".coderabbit/ast-grep"
+
+# Chat settings
+chat:
+  auto_reply: true
